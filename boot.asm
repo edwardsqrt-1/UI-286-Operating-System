@@ -99,7 +99,7 @@ _data:
     ; Fill up to bytes 511 and 512
     times 510-($-$$) db 0
 
-    ; Apple boot signature (0x55 and 0xAA)
+    ; MBR Boot signature (0x55 and 0xAA)
     dw 0xAA55
 
     ; Fill up rest of the floppy
