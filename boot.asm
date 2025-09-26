@@ -14,6 +14,7 @@ _boot:
     xor cx,cx
     xor dx,dx
     xor di,di
+    mov ds,dx
 
     ; Go to Entry Point
     jmp _starthere
