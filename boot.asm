@@ -1,7 +1,8 @@
 ; Boot sector actually starts at 0x7C00
 org 0x7C00
 
-_boot: ; Initializing everything and set extra segment to VGA text mode address
+; Initializing everything and set extra segment to VGA text mode address
+_boot:
 
     ; Set extra segment as the segment for VGA text mode 80x25 by default
     mov ax, VGA_MEMORY_TEXT
@@ -17,11 +18,13 @@ _boot: ; Initializing everything and set extra segment to VGA text mode address
     ; Go to Entry Point
     jmp _starthere
 
-_blankscreen: ; Function to blank the screen with the color value in al
+; Function to blank the screen with the color value in al
+_blankscreen: 
 
+    ; Set the screen pointing value to the first pixel and begin
     xor di, di
-
     _blankscreen_clear:
+
         ; Set all other characters in video memory to null
         mov [es:di], byte 0x00
         inc di
@@ -36,7 +39,88 @@ _blankscreen: ; Function to blank the screen with the color value in al
 
     ret
 
-_printstr: ; Prints a string where string = bx, x = cl, y = ch, and color = dh
+; Prints a character in al with a color in dh
+_printchar:
+
+    ; Place character in video memory
+    mov [es:di], al
+    inc di
+
+    ; Give character a color (foreground = yellow and background = blue)
+    mov [es:di], dh
+    inc di
+
+    ; Exit 
+    ret
+
+; Prints a number where number = bx, x = cl, y = ch, and color = dh
+_printnum: 
+
+    ; Convert y value into multiples of 80 (80 columns) and store into di
+    ; Note that each character corresponds to 2 bytes; first for character and second for attribute
+    mov ax, cx
+    shr ax, 8
+    mov dl, 80
+    mul dl
+    shl ax, 1
+    mov di, ax 
+
+    ; Convert x value into the value to translate di by
+    mov ax, cx
+    xor ah, ah
+    shl ax, 1
+    add di, ax
+
+    ; Add blue background color
+    or dh, 0x90
+
+    ; Free up dx register to hold the remainder (it contains the higher digits of integer), and move number to ax. Set bx to 10, and set cx to 0
+    mov si, dx
+    xor dx, dx
+    mov ax, bx
+    mov bx, 10
+    xor cx, cx
+
+    ; Begin the process of dividing and storing the remainder character values
+    _printnum_div:
+
+        ; Get the registers such that ax = result, dx = one-digit remainder
+        div bx 
+        xor dh, dh 
+
+        ; Get the character value for said integer; store into stack
+        add dl, '0' 
+        push dx
+        xor dl, dl
+
+        ; Keep track of the number of divisions done (equls the amount of digits); finish when ax = 0
+        inc cx 
+        cmp ax, 0 
+        jne _printnum_div
+
+
+    ; Begin printing integers; restore color contents to dx
+    mov dx, si
+    _printnum_print:
+
+        ; Get digit from stack
+        pop ax
+
+        ; Print character and decrement cx
+        call _printchar
+        dec cx
+
+        ; If cx is not zero, go again
+        jcxz _printnum_done
+        jmp _printnum_print
+
+
+    ; Exit the integer printing function
+    _printnum_done:
+        ret
+
+; Prints a string where string = bx, x = cl, y = ch, and color = dh
+_printstr:
 
     ; Convert y value into multiples of 80 (80 columns) and store into di
     ; Note that each character corresponds to 2 bytes; first for character and second for attribute
@@ -65,21 +149,18 @@ _printstr: ; Prints a string where string = bx, x = cl, y = ch, and color = dh
         jne _printstr_print
         ret
 
-        _printstr_print: ; Part of _printstr, but it skips here to print the value if not zero
+        ; Should there be a non-null character, print it to the screen
+        _printstr_print: 
 
-            ; Place character in video memory
-            mov [es:di], al
-            inc di
-
-            ; Give character a color (foreground = yellow and background = blue)
-            mov [es:di], dh
-            inc di
+            ; Print character
+            call _printchar
 
             ; Go to next character and repeat
             inc bx
             jmp _printstr_char
 
 
+; Boot Process
 _starthere: ; Entry point
 
     ; Turn off the blinking cursor that appears by default
@@ -109,12 +190,50 @@ _starthere: ; Entry point
     mov bx, wait_str
     call _printstr
 
+    ; Print out upper border
+    mov ch, 8
+    mov cl, 18
+    mov dh, 0xE
+    mov bx, border
+    call _printstr
+
+    ; Print out lower border
+    mov ch, 18
+    mov cl, 18
+    mov dh, 0xE
+    mov bx, border
+    call _printstr
+
+    ; Print out memory message prompt
+    mov ch, 22
+    mov cl, 30
+    mov dh, 0xB
+    mov bx, sys_memory_p
+    call _printstr
+
+    ; Retreive/store the amount of RAM in the system (int 12 places the RAM size in KBs)
+    int 0x12 ; BIOS call for RAM size; get it now while in real mode
+    mov [memsize], ax
+    mov ch, 22
+    mov cl, 43
+    mov bx, ax
+    call _printnum ; Note: this is an integer, hence the need for an integer printing function
+
+    mov al, ' '
+    call _printchar
+
+    mov al, 'K'
+    call _printchar
+
+    mov al, 'B'
+    call _printchar
+
     ; Go to halting loop when done
-    mov di, 158
+    mov di, 398
     jmp _halt
 
-
-_halt: ; Halts with a loading indicator
+; Halts with a loading indicator
+_halt:
 
     ; Set the foreground color to be cyan but keep background as blue
     mov [es:di+1], byte 0x13
@@ -134,6 +253,14 @@ _data:
     ; String for UI-286 Construction Message
     ui286   db  "UI-286 Construction In Progress...",0
     wait_str    db  "Please stay tuned!",0
+    border  db  "============================================",0
+
+    ; Memory size related constants
+    sys_memory_p    db  "Memory Size: ",0
+    memsize dw  0x0000
+
+    ; (Preview) This is what the input prompt will look like
+    sys_key_p    db  "Input > ",0
 
     ; Fill up to bytes 511 and 512 starting from current line
     times 510-($-$$) db 0
@@ -145,5 +272,8 @@ _data:
     times 1228288 db 0 ; 5.25" 1.2 MB Floppy
     ; times 1474048 db 0 ; 3.5" 1.44 MB Floppy
 
-    ; Definitions go here
-    VGA_MEMORY_TEXT equ 0xB800 ; Memory address for VGA Text Mode 80x25
+    ; Definitions go here (are not in the program itself)
+    VGA_MEMORY_TEXT     equ 0xB800 ; Memory address for VGA Text Mode 80x25
+    STACK_ADDRESS       equ 0x7BFF
+    STACK_SIZE_BYTES    equ 10
+    KEYBOARD_ADDRESS    equ 0x041E
