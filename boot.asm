@@ -40,6 +40,49 @@ _blankscreen:
 
     ret
 
+; Creates sound on PC Speaker with frequency at bx
+_makesound:
+
+    ; Extract corresponding value to send to the timer chip from the frequency; save in cx
+    ; 1193180 / frequency
+    mov ax, 0x34DC
+    mov dx, 0x12
+    div bx
+    mov cx, ax
+
+    ; Set the following options on the timer chip's register at 0x43:
+    ; - Set bit 0 to 0 such that binary is used
+    ; - Set bits 3, 2, and 1 to 011 such that the square wave generator is selected
+    ; - Set bits 5 and 4 to 11 such that both bytes are used (the frequency takes 2 bytes)
+    ; - Set bits 7 and 6 to 10 to select Channel 2
+    mov al, 10110110b
+    out 0x43, al
+    
+    ; Deploy frequency value to the timer chip's channel 2 port at 0x42 (little endian)
+    mov ax, cx
+    out 0x42, al
+    mov al, ah
+    out 0x42, al
+
+    ; Set bits 0 and 1 of the Keyboard Controller to 1 such that sound can play
+    in  al, 0x61
+    or  al, 00000011b
+    out 0x61, al
+
+    ; Use the built-in BIOS interrupt to delay by the specified amount of time
+    mov cx, si
+    mov dx, di
+    mov ah, 0x86
+    int 0x15
+
+    ; Set bits 0 and 1 of the Keyboard Controller back to 0 to turn off sound
+    in al, 0x61
+    and al, 11111100b
+    out 0x61, al
+
+    ; Exit
+    ret
+    
 ; Prints a character in al with a color in dh
 _printchar:
 
@@ -214,20 +257,37 @@ _starthere: ; Entry point
 
     ; Retreive/store the amount of RAM in the system (int 12 places the RAM size in KBs)
     int 0x12 ; BIOS call for RAM size; get it now while in real mode
+    inc ax ; Add one to include the 512 byte boot sector memory + 1 extra sector
     mov [memsize], ax
     mov ch, 22
     mov cl, 43
     mov bx, ax
     call _printnum ; Note: this is an integer, hence the need for an integer printing function
 
-    mov al, ' '
-    call _printchar
-
+    ; Add "KB" at the end of the number
+    add di, 2
     mov al, 'K'
     call _printchar
-
     mov al, 'B'
     call _printchar
+
+    ; Create a running rise of notes (note value in bx) as a speaker test
+    mov bx, 131
+    mov si, 0x3
+    mov di, 0xD090
+    call _makesound
+    mov bx, 262
+    call _makesound
+    mov bx, 523
+    call _makesound
+    mov bx, 1047
+    call _makesound
+    mov bx, 2093
+    call _makesound
+    mov bx, 3951
+    call _makesound
+    mov bx, 5643
+    call _makesound
 
     ; Go to halting loop when done
     mov di, 398
@@ -271,7 +331,7 @@ _data:
 
     ; Fill up rest of the floppy
     times 1228288 db 0 ; 5.25" 1.2 MB Floppy
-    ; times 1474048 db 0 ; 3.5" 1.44 MB Floppy
+    ;times 1474048 db 0 ; 3.5" 1.44 MB Floppy
 
     ; Definitions go here (are not in the program itself)
     VGA_MEMORY_TEXT     equ 0xB800 ; Memory address for VGA Text Mode 80x25
