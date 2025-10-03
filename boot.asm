@@ -210,7 +210,7 @@ _printstr:
 ; Boot Process
 _starthere: ; Entry point
 
-    ; Turn off the blinking cursor that appears by default
+    ; Turn off the blinking cursor that appears by default (temporary code)
     mov dx, 0x3D4
     mov al, 0xA
     out dx, al
@@ -218,37 +218,62 @@ _starthere: ; Entry point
     mov al, 0x20
     out dx, al
 
-    ; Make background blue
-    mov al, 0x10
+    ; Clear entire screen
+    mov al, 0x00
     call _blankscreen
-    xor di, di
 
-    ; Print out memory message prompt
-    mov ch, 1
+    ; Create a top bar for the bootloader
+    xor di, di
+    _bootloader_topbar:
+        mov [es:di], byte 0x00
+        inc di
+        mov [es:di], byte 0x40
+        inc di
+        cmp di, 160
+        jb _bootloader_topbar
+
+    ; Print out bootloader specification
+    mov ch, 2
     mov cl, 1
-    mov dh, 0x9C
-    mov bx, boot_str
+    mov dh, 0x0C
+    mov bx, bootloader_str1
+    call _printstr
+    add cl, 2
+    mov dh, 0x0F
+    mov bx, bootloader_str2
+    call _printstr
+    inc cl
+    mov dh, 0x0B
+    mov bx, bootloader_str3
+    call _printstr
+    add cl, 3
+    mov dh, 0x0F
+    mov bx, bootloader_str4
     call _printstr
 
-    ; Create a beep to show sound is working
-    mov bx, 131
-    mov si, 0x1
-    mov di, 0xE848
-    call _makesound
-    mov bx, 262
-    call _makesound
-    mov bx, 523
-    call _makesound
-    mov bx, 1046
-    call _makesound
-    mov bx, 2093
-    call _makesound
-    mov bx, 1046
-    call _makesound
-    mov bx, 523
-    call _makesound
-    mov bx, 262
-    call _makesound
+    ; Retrieve/store the amount of RAM in the system (int 12 places the RAM size in KBs)
+    int 0x12 ; BIOS call for RAM size; get it now while in real mode
+    mov [memsize], ax
+    mov ch, 3
+    mov cl, 1
+    mov dh, 0x0D
+    mov bx, ax
+    call _printnum ; Note: this is an integer, hence the need for an integer printing function
+
+    ; Print out message to load 
+    mov ch, 3
+    add cl, 5
+    mov dh, 0x0D
+    mov bx, memory_str
+    call _printstr
+
+    ; Print out message to load 
+    mov ch, 5
+    mov cl, 1
+    mov dh, 0x8E
+    mov bx, boot_str
+    call _printstr
+    
 
     ; Load next ten sectors that stores the rest of the bootloader
     ; ah = command to read floppy
@@ -299,23 +324,21 @@ _starthere: ; Entry point
         jmp _nothing
 
 ; Data variables go here
-_data:
+_bootsector_data:
 
     ; String for UI-286 Construction Message
-    ui286   db  "UI-286 Construction In Progress...",0
-    wait_str    db  "Please stay tuned!",0
-    border  db  "============================================",0
+    memory_str  db  "KB of RAM Avaliable",0
     err_status  db  "DISKETTE ERROR! Status:",0
+    bootloader_str1  db  "UI",0
+    bootloader_str2  db  "(",0
+    bootloader_str3  db  "286",0
+    bootloader_str4  db  ") Boot System v1.0",0
     boot_str    db  "Loading UI-286 into memory...",0
     boot_done   db  "Done!"
     boot_loc    db  0
 
     ; Memory size related constants
-    sys_memory_p    db  "Memory Size: ",0
     memsize dw  0x0000
-
-    ; (Preview) This is what the input prompt will look like
-    ;sys_key_p    db  "Input > ",0
 
 ; Fill up to bytes 511 and 512 starting from current line
 times 510-($-$$) db 0
@@ -326,27 +349,47 @@ dw 0xAA55
 ; Execution continues here after the magic number
 starthere_stage2:
 
+    ; Create a beep to show sound is working
+    mov bx, 131
+    mov si, 0x3
+    mov di, 0xD090
+    call _makesound
+    mov bx, 262
+    call _makesound
+    mov bx, 523
+    call _makesound
+    mov bx, 1046
+    call _makesound
+    mov bx, 2093
+    call _makesound
+    mov bx, 1046
+    call _makesound
+    mov bx, 523
+    call _makesound
+    mov bx, 262
+    call _makesound
+
     ; Reset extra segment to point to video memory
     mov ax, VGA_MEMORY_TEXT
     mov es, ax
 
-    ; Print out memory message prompt
-    mov ch, 1
+    ; Update boot prompt to be solid green rather than blinking yellow
+    mov ch, 5
     mov cl, 1
-    mov dh, 0x1C
+    mov dh, 0x0A
     mov bx, boot_str
     call _printstr
 
-    ; Print out memory message prompt
-    mov ch, 3
-    mov cl, 1
-    mov dh, 0x1E
+    ; Print out "Done!" at the end
+    mov ch, 5
+    mov cl, 31
+    mov dh, 0x0A
     mov bx, boot_done
     call _printstr
 
     ; Artificial delay so that the user can see that it has finished
-    mov cx, 0x1E
-    mov dx, 0x8480
+    mov cx, 0x3D
+    mov dx, 0x0900
     mov ah, 0x86
     int 0x15
 
@@ -364,7 +407,7 @@ starthere_stage2:
 
     ; Print out secondary message
     mov ch, 14
-    mov cl, 31
+    mov cl, 21
     mov dh, 0x1A
     mov bx, wait_str
     call _printstr
@@ -390,12 +433,11 @@ starthere_stage2:
     mov bx, sys_memory_p
     call _printstr
 
-    ; Retrieve/store the amount of RAM in the system (int 12 places the RAM size in KBs)
-    int 0x12 ; BIOS call for RAM size; get it now while in real mode
-    mov [memsize], ax
+    ; Print out stored memory size
     mov ch, 22
-    mov cl, 43
-    mov bx, ax
+    mov cl, 44
+    mov dh, 0x1B
+    mov bx, [memsize]
     call _printnum ; Note: this is an integer, hence the need for an integer printing function
     
     ; Add "KB" at the end of the number
@@ -447,6 +489,17 @@ _halt:
     ; Repeat until PC is powered off
     jmp _halt
 
+; Area of data for the rest of the code
+_bootsector_stage2_data:
+
+    ; Screen data
+    ui286   db  "UI(286) Construction in Progress...",0
+    wait_str   db  "Please stay tuned for future updates!",0
+    border  db "===========================================",0
+    sys_memory_p    db  "Memory Size:",0
+
+    ; (Preview) This is what the input prompt will look like
+    sys_key_p    db  " > ",0
 
 ; Fill up rest of the floppy
 times 1228800-($-$$) db 0 ; 5.25" 1.2 MB Floppy
