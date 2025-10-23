@@ -1,3 +1,11 @@
+; Note: Add the following flag at the end of compilation:
+;
+;   -dfloppy=<identifier>
+;
+; The following identifiers can be:
+;   1200 = 5.25" 1.2 MB
+;   1440 = 3.5" 1.44 MB
+
 ; Definitions go here (are not in the program itself)
 VGA_MEMORY_TEXT     equ 0xB800 ; Memory address for VGA Text Mode 80x25
 STACK_ADDRESS       equ 0x7BFF
@@ -30,21 +38,40 @@ db 2
 ; Number of entries for the root directory (will just go with what is default)
 dw 0x00E0
 
-; Sector amount
-dw 2400 ; for 5.25" disks
-;dw 2880 ; for 3.5" disks
+; This block of data highly depends on the floppy disk used
+; --- Data for 5.25" 1.2 MB Floppy Disks ---------------------------
+%if floppy = 1200
 
-; Media descriptor type
-db 0xF9 ; for 5.25" disks
-;db 0xF0 ; for 3.5" disks
+    ; Sector amount (5.25" 1.2 MB floppy)
+    dw 2400
 
-; Sectors per File Allocation Table
-dw 7 ; for 5.25" disks
-;dw 9 ; for 3.5" disks
+    ; Media descriptor type (5.25" 1.2 MB floppy)
+    db 0xF9
 
-; Sectors per Track
-dw 15 ; for 5.25" disks
-;dw 18 ; for 3.5" disks
+    ; Sectors per File Allocation Table (5.25" 1.2 MB floppy)
+    dw 7
+
+    ; Sectors per Track (5.25" 1.2 MB floppy)
+    dw 15
+
+; ------------------------------------------------------------------
+; --- Data for 3.5" 1.44 MB Floppy Disks ---------------------------
+%elif floppy = 1440
+
+    ; Sector amount (3.5" 1.44 MB floppy)
+    dw 2880
+
+    ; Media descriptor type (3.5" 1.44 MB floppy)
+    db 0xF0
+
+    ; Sectors per File Allocation Table (3.5" 1.44 MB floppy)
+    dw 9
+
+    ; Sectors per Track (3.5" 1.44 MB floppy)
+    dw 18
+
+%endif
+; ------------------------------------------------------------------
 
 ; Heads on device
 dw 2
@@ -590,6 +617,10 @@ _bootsector_stage2_data:
     ; (Preview) This is what the input prompt will look like
     sys_key_p    db  "UI(286) # ",0
 
-; Fill up rest of the floppy
-times 1228800-($-$$) db 0 ; 5.25" 1.2 MB Floppy
-;times 1474560-($-$$) db 0 ; 3.5" 1.44 MB Floppy
+; Fill up rest of the floppy (depends on floppy selected)
+; This block of data highly depends on the floppy disk used
+%if floppy = 1200
+    times 1228800-($-$$) db 0
+%elif floppy = 1440
+    times 1474560-($-$$) db 0
+%endif
