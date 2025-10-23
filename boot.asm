@@ -7,6 +7,74 @@ KEYBOARD_ADDRESS    equ 0x041E
 ; Boot sector is loaded by the computer in the address 0x7C00
 org 0x7C00
 
+; Jump to code (information below is for FAT16). This tells the program to go to the byte 0x3C,
+; which is the general standard for the location of the bootloader
+jmp short _boot 
+nop
+
+; 8-byte Identifier for FAT16 (UI 286 Operating System)
+db "UI286OPS"
+
+; Bytes per sector (going with 512 bytes per sector)
+dw 512
+
+; Sectors per cluster (one sector per cluster)
+db 1
+
+; Reserved Sectors (just one for the boot sector and two more for the second stage bootloader)
+dw 3
+
+; File Allocation Tables (typically 2)
+db 2
+
+; Number of entries for the root directory (will just go with what is default)
+dw 0x00E0
+
+; Sector amount
+dw 2400 ; for 5.25" disks
+;dw 2880 ; for 3.5" disks
+
+; Media descriptor type
+db 0xF9 ; for 5.25" disks
+;db 0xF0 ; for 3.5" disks
+
+; Sectors per File Allocation Table
+dw 7 ; for 5.25" disks
+;dw 9 ; for 3.5" disks
+
+; Sectors per Track
+dw 15 ; for 5.25" disks
+;dw 18 ; for 3.5" disks
+
+; Heads on device
+dw 2
+
+; Hidden Sectors (not used)
+dd 0
+
+; Also sector amount (not used)
+dd 0
+
+; ----- Extended Boot Record -----
+
+; Drive Number
+db 0
+
+; Reserved 
+db 0
+
+; Signature
+db 0x29
+
+; Reserved Again
+dd 0
+
+; Volume Label
+db "UI-286 BOOT"
+
+; System Identifier String
+db "FAT12   "
+
 ; Initializing everything and set extra segment to VGA text mode address
 _boot:
 
@@ -47,49 +115,6 @@ _blankscreen:
         cmp di, 0xFA0 ; (80*25)*2 for two bytes per character
         jne _blankscreen_clear
 
-    ret
-
-; Creates sound on PC Speaker with frequency at bx
-_makesound:
-
-    ; Extract corresponding value to send to the timer chip from the frequency; save in cx
-    ; 1193180 / frequency
-    mov ax, 0x34DC
-    mov dx, 0x12
-    div bx
-    mov cx, ax
-
-    ; Set the following options on the timer chip's register at 0x43:
-    ; - Set bit 0 to 0 such that binary is used
-    ; - Set bits 3, 2, and 1 to 011 such that the square wave generator is selected
-    ; - Set bits 5 and 4 to 11 such that both bytes are used (the frequency takes 2 bytes)
-    ; - Set bits 7 and 6 to 10 to select Channel 2
-    mov al, 10110110b
-    out 0x43, al
-    
-    ; Deploy frequency value to the timer chip's channel 2 port at 0x42 (little endian)
-    mov ax, cx
-    out 0x42, al
-    mov al, ah
-    out 0x42, al
-
-    ; Set bits 0 and 1 of the Keyboard Controller to 1 such that sound can play
-    in  al, 0x61
-    or  al, 00000011b
-    out 0x61, al
-
-    ; Use the built-in BIOS interrupt to delay by the specified amount of time
-    mov cx, si
-    mov dx, di
-    mov ah, 0x86
-    int 0x15
-
-    ; Set bits 0 and 1 of the Keyboard Controller back to 0 to turn off sound
-    in al, 0x61
-    and al, 11111100b
-    out 0x61, al
-
-    ; Exit
     ret
     
 ; Prints a character at the current screen location in al with a color in dh
@@ -305,12 +330,12 @@ _starthere: ; Entry point
         ; Display error code in ah if failed
         mov bx, VGA_MEMORY_TEXT
         mov es, bx
-        mov ch, 1
+        mov ch, 7
         mov cl, 1
-        mov dh, 0x9C
+        mov dh, 0x8C
         mov bx, err_status
         call _printstr 
-        mov ch, 1
+        mov ch, 7
         mov cl, 25
         shr ax, 8
         mov bx, ax
@@ -327,14 +352,13 @@ _starthere: ; Entry point
 _bootsector_data:
 
     ; String for UI-286 Construction Message
-    memory_str  db  "KB of RAM Avaliable",0
-    err_status  db  "DISKETTE ERROR! Status:",0
+    memory_str  db  "KB of RAM Available",0
+    err_status  db  "Boot Failed! Status = ",0
     bootloader_str1  db  "UI",0
     bootloader_str2  db  "(",0
     bootloader_str3  db  "286",0
-    bootloader_str4  db  ") Boot System v1.0",0
+    bootloader_str4  db  ") Boot System v1.0a",0
     boot_str    db  "Loading UI-286 into memory...",0
-    boot_done   db  "Done!"
     boot_loc    db  0
 
     ; Memory size related constants
@@ -345,6 +369,49 @@ times 510-($-$$) db 0
 
 ; MBR Boot signature (0x55 and 0xAA)
 dw 0xAA55
+
+; Creates sound on PC Speaker with frequency at bx
+_makesound:
+
+    ; Extract corresponding value to send to the timer chip from the frequency; save in cx
+    ; 1193180 / frequency
+    mov ax, 0x34DC
+    mov dx, 0x12
+    div bx
+    mov cx, ax
+
+    ; Set the following options on the timer chip's register at 0x43:
+    ; - Set bit 0 to 0 such that binary is used
+    ; - Set bits 3, 2, and 1 to 011 such that the square wave generator is selected
+    ; - Set bits 5 and 4 to 11 such that both bytes are used (the frequency takes 2 bytes)
+    ; - Set bits 7 and 6 to 10 to select Channel 2
+    mov al, 10110110b
+    out 0x43, al
+    
+    ; Deploy frequency value to the timer chip's channel 2 port at 0x42 (little endian)
+    mov ax, cx
+    out 0x42, al
+    mov al, ah
+    out 0x42, al
+
+    ; Set bits 0 and 1 of the Keyboard Controller to 1 such that sound can play
+    in  al, 0x61
+    or  al, 00000011b
+    out 0x61, al
+
+    ; Use the built-in BIOS interrupt to delay by the specified amount of time
+    mov cx, si
+    mov dx, di
+    mov ah, 0x86
+    int 0x15
+
+    ; Set bits 0 and 1 of the Keyboard Controller back to 0 to turn off sound
+    in al, 0x61
+    and al, 11111100b
+    out 0x61, al
+
+    ; Exit
+    ret
 
 ; Execution continues here after the magic number
 starthere_stage2:
@@ -385,6 +452,13 @@ starthere_stage2:
     mov cl, 31
     mov dh, 0x0A
     mov bx, boot_done
+    call _printstr
+
+    ; Print the intent to load the kernel
+    mov ch, 6
+    mov cl, 1
+    mov dh, 0x0F
+    mov bx, kernel_boot_str
     call _printstr
 
     ; Artificial delay so that the user can see that it has finished
@@ -466,6 +540,7 @@ starthere_stage2:
     mov ah, 0x86
     jmp _halt
 
+
 ; Halts with a loading indicator
 _halt:
 
@@ -475,14 +550,26 @@ _halt:
     ; Create loading symbol
     mov [es:di], byte '-'
     nop
+    nop
+    nop
+    nop
     int 0x15
     mov [es:di], byte '\'
+    nop
+    nop
+    nop
     nop
     int 0x15
     mov [es:di], byte '|'
     nop
+    nop
+    nop
+    nop
     int 0x15
     mov [es:di], byte '/'
+    nop
+    nop
+    nop
     nop
     int 0x15
 
@@ -493,13 +580,15 @@ _halt:
 _bootsector_stage2_data:
 
     ; Screen data
+    boot_done   db  "Done!",0
     ui286   db  "UI(286) Construction in Progress...",0
     wait_str   db  "Please stay tuned for future updates!",0
     border  db "===========================================",0
     sys_memory_p    db  "Memory Size:",0
+    kernel_boot_str db  "Now booting UI-286...",0
 
     ; (Preview) This is what the input prompt will look like
-    sys_key_p    db  " > ",0
+    sys_key_p    db  "UI(286) # ",0
 
 ; Fill up rest of the floppy
 times 1228800-($-$$) db 0 ; 5.25" 1.2 MB Floppy
