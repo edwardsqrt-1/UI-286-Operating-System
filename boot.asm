@@ -5,15 +5,48 @@
 ; The following identifiers can be:
 ;   1200 = 5.25" 1.2 MB
 ;   1440 = 3.5" 1.44 MB
-
 ; Definitions go here (are not in the program itself)
 VGA_MEMORY_TEXT     equ 0xB800 ; Memory address for VGA Text Mode 80x25
-STACK_ADDRESS       equ 0x7BFF
+STACK_ADDRESS       equ 0x699
+STACK_SEG_ADDR      equ 0x500
 STACK_SIZE_BYTES    equ 10
 KEYBOARD_ADDRESS    equ 0x041E
+K_OFF               equ 0
+K_SEG               equ 0x70
 
-; Boot sector is loaded by the computer in the address 0x7C00
+; Conditional Declarations based on floppy disk choice
+%if floppy = 360 ; (5.25" 360 KB floppy)
+    SECTORS_PER_CLUSTER   equ 2
+    TOTAL_SECTOR_AMOUNT   equ 720
+    MEDIA_DESCRIPTOR      equ 0xFD
+    SECTORS_PER_FAT       equ 2
+    SECTORS_PER_TRACK     equ 9
+    ROOT_DIRECTORIES      equ 7
+    PADDING_BYTES         equ 368640
+
+%elif floppy = 1200 ; (5.25" 1.2 MB floppy)
+    SECTORS_PER_CLUSTER   equ 1
+    TOTAL_SECTOR_AMOUNT   equ 2400
+    MEDIA_DESCRIPTOR      equ 0xF9
+    SECTORS_PER_FAT       equ 7
+    SECTORS_PER_TRACK     equ 15
+    ROOT_DIRECTORIES      equ 14
+    PADDING_BYTES         equ 1228800
+
+%elif floppy = 1440 ; (3.5" 1.44 MB floppy)
+    SECTORS_PER_CLUSTER   equ 1
+    TOTAL_SECTOR_AMOUNT   equ 2880
+    MEDIA_DESCRIPTOR      equ 0xF0
+    SECTORS_PER_FAT       equ 9
+    SECTORS_PER_TRACK     equ 18
+    ROOT_DIRECTORIES      equ 14
+    PADDING_BYTES         equ 1474560
+
+%endif
+
+; Boot sector is loaded by the computer in the address 0x7C00 (also enforce 16-bit compatibility)
 org 0x7C00
+BITS 16
 
 ; Jump to code (information below is for FAT16). This tells the program to go to the byte 0x3C,
 ; which is the general standard for the location of the bootloader
@@ -27,51 +60,28 @@ db "UI286OPS"
 dw 512
 
 ; Sectors per cluster (one sector per cluster)
-db 1
+db 2
 
 ; Reserved Sectors (just one for the boot sector and two more for the second stage bootloader)
 dw 3
 
 ; File Allocation Tables (typically 2)
-db 2
+db 1
 
-; Number of entries for the root directory (will just go with what is default)
-dw 0x00E0
+; Number of root directories (the first three nibbles actually hold the data; fourth nibble is not used)
+dw ROOT_DIRECTORIES * 0x10
 
-; This block of data highly depends on the floppy disk used
-; --- Data for 5.25" 1.2 MB Floppy Disks ---------------------------
-%if floppy = 1200
+; Sector amount 
+dw TOTAL_SECTOR_AMOUNT
 
-    ; Sector amount (5.25" 1.2 MB floppy)
-    dw 2400
+; Media descriptor type
+db MEDIA_DESCRIPTOR
 
-    ; Media descriptor type (5.25" 1.2 MB floppy)
-    db 0xF9
+; Sectors per File Allocation Table
+dw SECTORS_PER_FAT
 
-    ; Sectors per File Allocation Table (5.25" 1.2 MB floppy)
-    dw 7
-
-    ; Sectors per Track (5.25" 1.2 MB floppy)
-    dw 15
-
-; ------------------------------------------------------------------
-; --- Data for 3.5" 1.44 MB Floppy Disks ---------------------------
-%elif floppy = 1440
-
-    ; Sector amount (3.5" 1.44 MB floppy)
-    dw 2880
-
-    ; Media descriptor type (3.5" 1.44 MB floppy)
-    db 0xF0
-
-    ; Sectors per File Allocation Table (3.5" 1.44 MB floppy)
-    dw 9
-
-    ; Sectors per Track (3.5" 1.44 MB floppy)
-    dw 18
-
-%endif
-; ------------------------------------------------------------------
+; Sectors per Track
+dw SECTORS_PER_TRACK
 
 ; Heads on device
 dw 2
@@ -85,7 +95,7 @@ dd 0
 ; ----- Extended Boot Record -----
 
 ; Drive Number
-db 0
+boot_loc db 0
 
 ; Reserved 
 db 0
@@ -108,17 +118,24 @@ _boot:
     ; Set extra segment as the segment for VGA text mode 80x25 by default
     mov ax, VGA_MEMORY_TEXT
     mov es, ax
+    mov ax, STACK_SEG_ADDR
+    mov ss, ax
+    mov ax, STACK_ADDRESS
+    mov sp, ax
 
-    ; Save boot location
-    mov [boot_loc], dl
 
-    ; Clear out all values
+    ; Clear out all values (excluding dx to save the boot location
+    mov ax,cs
+    mov ds,ax
     xor ax,ax
     xor bx,bx
     xor cx,cx
-    xor dx,dx
     xor di,di
-    mov ds,dx
+    xor si,si
+
+    ; Save boot location
+    mov [boot_loc], dl
+    xor dx,dx
 
     ; Go to Entry Point
     jmp _starthere
@@ -163,11 +180,13 @@ _printnum:
 
     ; Convert y value into multiples of 80 (80 columns) and store into di
     ; Note that each character corresponds to 2 bytes; first for character and second for attribute
+    ; 80 * 2 = 160
+    push bx
     mov ax, cx
-    shr ax, 8
-    mov dl, 80
-    mul dl
-    shl ax, 1
+    mov al, ah
+    xor ah, ah
+    mov bx, 160
+    mul bl
     mov di, ax 
 
     ; Convert x value into the value to translate di by
@@ -175,6 +194,7 @@ _printnum:
     xor ah, ah
     shl ax, 1
     add di, ax
+    pop bx
 
     ; Free up dx register to hold the remainder (it contains the higher digits of integer), and move number to ax. Set bx to 10, and set cx to 0
     mov si, dx
@@ -226,11 +246,13 @@ _printstr:
 
     ; Convert y value into multiples of 80 (80 columns) and store into di
     ; Note that each character corresponds to 2 bytes; first for character and second for attribute
+    ; 80 * 2 = 160
+    push bx
     mov ax, cx
-    shr ax, 8
-    mov dl, 80
-    mul dl
-    shl ax, 1
+    mov al, ah
+    xor ah, ah
+    mov bx, 160
+    mul bl
     mov di, ax 
 
     ; Convert x value into the value to translate di by
@@ -238,6 +260,7 @@ _printstr:
     xor ah, ah
     shl ax, 1
     add di, ax
+    pop bx
 
     ; Begin loop
     _printstr_char:
@@ -261,14 +284,6 @@ _printstr:
 
 ; Boot Process
 _starthere: ; Entry point
-
-    ; Turn off the blinking cursor that appears by default (temporary code)
-    mov dx, 0x3D4
-    mov al, 0xA
-    out dx, al
-    inc dx
-    mov al, 0x20
-    out dx, al
 
     ; Clear entire screen
     mov al, 0x00
@@ -337,7 +352,7 @@ _starthere: ; Entry point
     ; dl = drive to read from where 0 = A:, 1 = B:, 2 = C:, and 3 = D:
     ; es = higher order bits of address. Since we are loading this right after the boot sector at the value 0x7E00 (0x7C00 + 512 bytes), this is just 0
     mov ah, 0x02
-    mov al, 10
+    mov al, 2
     mov bx, 0x7E00
     xor ch, ch
     mov cl, 2
@@ -385,8 +400,7 @@ _bootsector_data:
     bootloader_str2  db  "(",0
     bootloader_str3  db  "286",0
     bootloader_str4  db  ") Boot System v1.0a",0
-    boot_str    db  "Loading UI-286 into memory...",0
-    boot_loc    db  0
+    boot_str    db  "Loading the second stage into memory...",0
 
     ; Memory size related constants
     memsize dw  0x0000
@@ -440,10 +454,21 @@ _makesound:
     ; Exit
     ret
 
+; Function to reset floppy disk controller
+_reset_floppy:
+    push ax
+    push dx
+    xor ah, ah
+    mov dl, [boot_loc]
+    int 0x13
+    pop dx
+    pop ax
+    ret
+
 ; Execution continues here after the magic number
 starthere_stage2:
 
-    ; Create a beep to show sound is working
+    ; Create a series of beep to show sound is working
     mov bx, 131
     mov si, 0x3
     mov di, 0xD090
@@ -476,7 +501,7 @@ starthere_stage2:
 
     ; Print out "Done!" at the end
     mov ch, 5
-    mov cl, 31
+    mov cl, 41
     mov dh, 0x0A
     mov bx, boot_done
     call _printstr
@@ -485,80 +510,160 @@ starthere_stage2:
     mov ch, 6
     mov cl, 1
     mov dh, 0x0F
-    mov bx, kernel_boot_str
+    mov bx, fat_load_str
     call _printstr
 
-    ; Artificial delay so that the user can see that it has finished
-    mov cx, 0x3D
-    mov dx, 0x0900
-    mov ah, 0x86
-    int 0x15
-
-    ; Make background blue (again)
-    mov al, 0x10
-    call _blankscreen
-    xor di, di
-
-    ; Print out the UI-286 Construction Message
-    mov ch, 12
-    mov cl, 23
-    mov dh, 0x1E
-    mov bx, ui286
-    call _printstr
-
-    ; Print out secondary message
-    mov ch, 14
-    mov cl, 21
-    mov dh, 0x1A
-    mov bx, wait_str
-    call _printstr
-
-    ; Print out upper border
-    mov ch, 8
-    mov cl, 18
-    mov dh, 0x1E
-    mov bx, border
-    call _printstr
-
-    ; Print out lower border
-    mov ch, 18
-    mov cl, 18
-    mov dh, 0x1E
-    mov bx, border
-    call _printstr
-
-    ; Print out memory message prompt
-    mov ch, 22
-    mov cl, 30
-    mov dh, 0x1B
-    mov bx, sys_memory_p
-    call _printstr
-
-    ; Print out stored memory size
-    mov ch, 22
-    mov cl, 44
-    mov dh, 0x1B
-    mov bx, [memsize]
-    call _printnum ; Note: this is an integer, hence the need for an integer printing function
+    ; Load the File Allocation Table
+    mov ah, 0x02
+    mov al, 1
+    mov bx, 0x8200
+    xor ch, ch
+    mov cl, SECTORS_PER_FAT+4
+    xor dx, dx
+    mov es, dx
+    mov dl, [boot_loc]
+    call _reset_floppy
+    int 0x13
     
-    ; Add "KB" at the end of the number
-    add di, 2
-    mov al, 'K'
-    call _printchar
-    mov al, 'B'
-    call _printchar
+    ; Carry flag tells whether loading the file allocation table worked or not
+    jnc successful_FAT_load
+    mov bx, kernel_fail_1
+    jmp fail_kernel_load
 
-    ; Different beep to show success
-    mov bx, 1000
-    mov si, 0x3
-    mov di, 0xD090
-    call _makesound
+; Proceed execution upon successfully loading the table
+successful_FAT_load:
 
-    ; Different beep to show success
-    mov bx, 1500
-    mov si, 0x4
-    mov di, 0xD090
-    call _makesound
+    ; Print success message
+    mov bx, fat_load_successful_str
+    mov ax, 0xB800
+    mov es, ax
+    mov ch, 8
+    mov cl, 1
+    mov dh, 0x0F
+    call _printstr
+
+    ; Point the destination index to the name entry (located at an offset of 0x20)
+    ; Also point the source index at the name to be looked for
+    mov di, 0x8220
+    mov si, kernel_name
+
+; Iterate through and determine whether the name matches
+name_check:
+
+    ; Compare characters
+    mov ah, [di]
+    mov al, [si]
+    cmp ah, al
+    je continue_name_check
+    mov bx, kernel_fail_2
+    jmp fail_kernel_load
+    
+    ; Find if the next character is the end of string character (value of 0)
+    continue_name_check:
+        xchg dx, si
+        inc dx
+        xchg dx, si
+        inc di
+        mov al, [si]
+        cmp al, 0
+        je kernel_found
+        jmp name_check
+
+; Proceed to load the kernel data
+kernel_found:
+
+    ; Go to the start sector 
+    mov si, di
+    add si, 15
+    push si
+
+    ; Load what the kernel start sector is (prompt)
+    mov bx, kernel_start_sector_p
+    mov ch, 9
+    mov cl, 1
+    mov dh, 0x0F
+    call _printstr
+
+    ; Load what the kernel start sector is (value)
+    mov bx, [si]
+    mov ch, 9
+    mov cl, 15
+    mov dh, 0x0F
+    call _printnum
+
+    ; Load what the size of the file is (prompt)
+    mov bx, kernel_size_p
+    mov ch, 10
+    mov cl, 1
+    mov dh, 0x0F
+    call _printstr 
+
+    ; Load what the size of the file is (value)
+    pop dx
+    add dx, 2
+    mov si, dx
+    mov bx, [si]
+    mov ch, 10
+    mov cl, 14
+    mov dh, 0x0F
+    call _printnum
+
+    ; Load what the size of the file is (unit)
+    mov bx, kernel_size_p_2
+    mov ch, 10
+    mov cl, 19
+    mov dh, 0x0F
+    call _printstr 
+
+    ; Tell the user that the kernel is now being loaded
+    mov bx, kernel_load_str
+    mov ax, 0xB800
+    mov es, ax
+    mov ch, 11
+    mov cl, 1
+    mov dh, 0x0F
+    call _printstr
+
+    ; Determine how many sectors to load
+    xor dx, dx
+    mov cx, 512
+    div cx
+    inc ax
+    
+    ; Load the kernel directly near the beginning of conventional memory (0x700)
+    ; Note: Kernel Segment K_SEG = 0x70, and Kernel Offset K_OFF = 0x00; K_SEG * 0x10 + K_OFF = K_ADDR
+    mov ah, 0x02
+    mov bx, K_OFF 
+    mov ch, 0 ; Start Cylinder (while I should use an equation, all disk values allow this to stay 0)
+    mov cl, (SECTORS_PER_FAT+4+ROOT_DIRECTORIES) % SECTORS_PER_TRACK ; Start Sector
+    mov dx, K_SEG
+    mov es, dx
+    mov dh, (SECTORS_PER_FAT+4+ROOT_DIRECTORIES) / SECTORS_PER_TRACK ; Start Head
+    mov dl, [boot_loc]
+    call _reset_floppy ; Reset just in case
+
+    ; Run the command to the BIOS and determine whether the desired sectors have been loaded
+    int 0x13
+    jnc kernel_loaded
+    mov bx, kernel_fail_3
+    jmp fail_kernel_load
+
+; Go to the kernel if successfully loaded (set the data segment to match; code segment is automatically set on long jump
+kernel_loaded:
+    mov ax, K_SEG
+    mov ds, ax
+    jmp K_SEG:K_OFF
+    
+; If the kernel fails to load, print message and then halt
+fail_kernel_load:
+
+    ; Print message
+    mov ax, 0xB800
+    mov ax, es
+    mov ch, 21
+    mov cl, 1
+    mov dh, 0x04
+    call _printstr
 
     ; Go to halting loop when done
     mov di, 398
@@ -612,15 +717,18 @@ _bootsector_stage2_data:
     wait_str   db  "Please stay tuned for future updates!",0
     border  db "===========================================",0
     sys_memory_p    db  "Memory Size:",0
-    kernel_boot_str db  "Now booting UI-286...",0
-
-    ; (Preview) This is what the input prompt will look like
-    sys_key_p    db  "UI(286) # ",0
+    fat_load_str db  "Now locating the UI(286) Kernel...",0
+    fat_load_successful_str db  "FAT loaded successfully! Looking for KERNEL.BIN...",0
+    kernel_name db  "KERNEL  BIN",0
+    kernel_load_str db  "Found KERNEL.BIN! Loading UI(286)....",0
+    kernel_fail_1   db  "Cannot load the FAT :(",0
+    kernel_fail_2   db  "Cannot find KERNEL.BIN :(",0
+    kernel_load_successful_str db  "Kernel loaded successfully, loading UI(286)!",0
+    kernel_start_sector_p   db  "Start Sector:",0
+    kernel_size_p   db  "Kernel Size:",0
+    kernel_size_p_2 db  "Bytes",0
+    kernel_fail_3   db  "Error: Cannot load UI(286) into memory :(",0
 
 ; Fill up rest of the floppy (depends on floppy selected)
 ; This block of data highly depends on the floppy disk used
-%if floppy = 1200
-    times 1228800-($-$$) db 0
-%elif floppy = 1440
-    times 1474560-($-$$) db 0
-%endif
+times PADDING_BYTES-($-$$) db 0
