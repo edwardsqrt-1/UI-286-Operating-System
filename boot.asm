@@ -5,6 +5,7 @@
 ; The following identifiers can be:
 ;   1200 = 5.25" 1.2 MB
 ;   1440 = 3.5" 1.44 MB
+
 ; Definitions go here (are not in the program itself)
 VGA_MEMORY_TEXT     equ 0xB800 ; Memory address for VGA Text Mode 80x25
 STACK_ADDRESS       equ 0x699
@@ -59,8 +60,8 @@ db "UI286OPS"
 ; Bytes per sector (going with 512 bytes per sector)
 dw 512
 
-; Sectors per cluster (one sector per cluster)
-db 2
+; Sectors per cluster (two sectors per cluster)
+db SECTORS_PER_CLUSTER
 
 ; Reserved Sectors (just one for the boot sector and two more for the second stage bootloader)
 dw 3
@@ -586,6 +587,7 @@ kernel_found:
 
     ; Load what the kernel start sector is (value)
     mov bx, [si]
+    mov [kernel_start_sect], bx
     mov ch, 9
     mov cl, 15
     mov dh, 0x0F
@@ -629,16 +631,46 @@ kernel_found:
     mov cx, 512
     div cx
     inc ax
+    mov [sectors_to_load], ax
     
     ; Load the kernel directly near the beginning of conventional memory (0x700)
     ; Note: Kernel Segment K_SEG = 0x70, and Kernel Offset K_OFF = 0x00; K_SEG * 0x10 + K_OFF = K_ADDR
+    ; Also note the equations:
+    ;   - Cylinders = (sectors_to_load+SECTORS_PER_FAT+3+ROOT_DIRECTORIES) / (2 * SECTORS_PER_TRACK)
+    ;   - Heads = (sectors_to_load+SECTORS_PER_FAT+3+ROOT_DIRECTORIES) / SECTORS_PER_TRACK % 2 
+    ;   - Sectors = (sectors_to_load+SECTORS_PER_FAT+3+ROOT_DIRECTORIES) % SECTORS_PER_TRACK
+    
+    ; Get Sectors and Heads
+    mov ax, [kernel_start_sect]
+    sub ax, 2
+    mov bl, SECTORS_PER_CLUSTER
+    mul bl
+    add ax, SECTORS_PER_FAT+3+ROOT_DIRECTORIES
+    push ax
+    mov bl, SECTORS_PER_TRACK
+    div bl
+    and al, 0x1 ; Filter last bit (same as modulo 2)
+    inc ah
+    mov dh, al ; Start Head
+    mov cl, ah ; Start Sector
+
+    ; Get Cylinders
+    mov ax, SECTORS_PER_TRACK
+    mov bl, 2
+    mul bl
+    mov bl, al
+    pop ax 
+    div bl
+    mov ch, al ; Start Cylinder
+
+    ; Get other necessary parameters
+    push dx
+    mov ax, [sectors_to_load]
     mov ah, 0x02
     mov bx, K_OFF 
-    mov ch, 0 ; Start Cylinder (while I should use an equation, all disk values allow this to stay 0)
-    mov cl, (SECTORS_PER_FAT+4+ROOT_DIRECTORIES) % SECTORS_PER_TRACK ; Start Sector
     mov dx, K_SEG
-    mov es, dx
-    mov dh, (SECTORS_PER_FAT+4+ROOT_DIRECTORIES) / SECTORS_PER_TRACK ; Start Head
+    mov es, dx 
+    pop dx
     mov dl, [boot_loc]
     call _reset_floppy ; Reset just in case
 
@@ -728,6 +760,8 @@ _bootsector_stage2_data:
     kernel_size_p   db  "Kernel Size:",0
     kernel_size_p_2 db  "Bytes",0
     kernel_fail_3   db  "Error: Cannot load UI(286) into memory :(",0
+    kernel_start_sect   dw  0
+    sectors_to_load     dw  0
 
 ; Fill up rest of the floppy (depends on floppy selected)
 ; This block of data highly depends on the floppy disk used
