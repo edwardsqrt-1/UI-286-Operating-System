@@ -12,8 +12,10 @@ STACK_ADDRESS       equ 0x699
 STACK_SEG_ADDR      equ 0x500
 STACK_SIZE_BYTES    equ 10
 KEYBOARD_ADDRESS    equ 0x041E
-K_OFF               equ 0
-K_SEG               equ 0x70
+K_CODE_OFFSET       equ 0
+K_CODE_SEGMENT      equ 0x70
+K_DATA_OFFSET       equ 0
+K_DATA_SEGMENT      equ 0x90
 
 ; Conditional Declarations based on floppy disk choice
 %if floppy = 360 ; (5.25" 360 KB floppy)
@@ -469,24 +471,12 @@ _reset_floppy:
 ; Execution continues here after the magic number
 starthere_stage2:
 
-    ; Create a series of beep to show sound is working
-    mov bx, 131
+    ; Create a series of beeps to show sound is working
+    mov bx, 1046
     mov si, 0x3
     mov di, 0xD090
     call _makesound
-    mov bx, 262
-    call _makesound
-    mov bx, 523
-    call _makesound
     mov bx, 1046
-    call _makesound
-    mov bx, 2093
-    call _makesound
-    mov bx, 1046
-    call _makesound
-    mov bx, 523
-    call _makesound
-    mov bx, 262
     call _makesound
 
     ; Reset extra segment to point to video memory
@@ -605,6 +595,7 @@ kernel_found:
     add dx, 2
     mov si, dx
     mov bx, [si]
+    push bx
     mov ch, 10
     mov cl, 14
     mov dh, 0x0F
@@ -627,6 +618,7 @@ kernel_found:
     call _printstr
 
     ; Determine how many sectors to load
+    pop ax
     xor dx, dx
     mov cx, 512
     div cx
@@ -667,8 +659,8 @@ kernel_found:
     push dx
     mov ax, [sectors_to_load]
     mov ah, 0x02
-    mov bx, K_OFF 
-    mov dx, K_SEG
+    mov bx, K_CODE_OFFSET
+    mov dx, K_CODE_SEGMENT
     mov es, dx 
     pop dx
     mov dl, [boot_loc]
@@ -682,9 +674,30 @@ kernel_found:
 
 ; Go to the kernel if successfully loaded (set the data segment to match; code segment is automatically set on long jump
 kernel_loaded:
-    mov ax, K_SEG
+
+    ; Save contents of ax
+    push ax
+
+    ; Tell the user how many sectors are loaded
+    mov bx, sector_count_p
+    mov ax, 0xB800
+    mov es, ax
+    mov ch, 12
+    mov cl, 1
+    mov dh, 0x0E
+    call _printstr
+
+    ; Print number of sectors
+    pop bx
+    mov ch, 12
+    mov cl, 27
+    mov dh, 0x0E
+    call _printnum
+
+    ; Set data segment and jump to the kernel code
+    mov ax, K_DATA_SEGMENT
     mov ds, ax
-    jmp K_SEG:K_OFF
+    jmp K_CODE_SEGMENT:K_CODE_OFFSET
     
 ; If the kernel fails to load, print message and then halt
 fail_kernel_load:
@@ -760,6 +773,7 @@ _bootsector_stage2_data:
     kernel_size_p   db  "Kernel Size:",0
     kernel_size_p_2 db  "Bytes",0
     kernel_fail_3   db  "Error: Cannot load UI(286) into memory :(",0
+    sector_count_p  db  "Amount of sectors loaded:",0
     kernel_start_sect   dw  0
     sectors_to_load     dw  0
 
