@@ -15,7 +15,7 @@ KEYBOARD_ADDRESS    equ 0x041E
 K_CODE_OFFSET       equ 0
 K_CODE_SEGMENT      equ 0x70
 K_DATA_OFFSET       equ 0
-K_DATA_SEGMENT      equ 0x90
+K_DATA_SEGMENT      equ 0xE0
 
 ; Conditional Declarations based on floppy disk choice
 %if floppy = 360 ; (5.25" 360 KB floppy)
