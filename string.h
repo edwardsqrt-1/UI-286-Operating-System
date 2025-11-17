@@ -7,4 +7,8 @@ char GetChar();
 // Function to get the length of a string
 unsigned short StrLen(char* str);
 
+// Function to compare strings
+// Note: 0 = different and 1 = same
+unsigned char StrCompare(char* str1, char* str2);
+
 #endif

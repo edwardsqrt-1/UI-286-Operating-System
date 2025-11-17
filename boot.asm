@@ -15,7 +15,7 @@ KEYBOARD_ADDRESS    equ 0x041E
 K_CODE_OFFSET       equ 0
 K_CODE_SEGMENT      equ 0x70
 K_DATA_OFFSET       equ 0
-K_DATA_SEGMENT      equ 0xE0
+K_DATA_SEGMENT      equ 0x300
 
 ; Conditional Declarations based on floppy disk choice
 %if floppy = 360 ; (5.25" 360 KB floppy)
@@ -406,7 +406,7 @@ _bootsector_data:
     boot_str    db  "Loading the second stage into memory...",0
 
     ; Memory size related constants
-    memsize dw  0x0000
+    memsize dw  0x1234
 
 ; Fill up to bytes 511 and 512 starting from current line
 times 510-($-$$) db 0
@@ -604,7 +604,7 @@ kernel_found:
     ; Load what the size of the file is (unit)
     mov bx, kernel_size_p_2
     mov ch, 10
-    mov cl, 19
+    mov cl, 20
     mov dh, 0x0F
     call _printstr 
 
@@ -614,7 +614,7 @@ kernel_found:
     mov es, ax
     mov ch, 11
     mov cl, 1
-    mov dh, 0x0F
+    mov dh, 0x8F
     call _printstr
 
     ; Determine how many sectors to load
@@ -622,7 +622,7 @@ kernel_found:
     xor dx, dx
     mov cx, 512
     div cx
-    inc ax
+    add ax, 1
     mov [sectors_to_load], ax
     
     ; Load the kernel directly near the beginning of conventional memory (0x700)
@@ -632,15 +632,26 @@ kernel_found:
     ;   - Heads = (sectors_to_load+SECTORS_PER_FAT+3+ROOT_DIRECTORIES) / SECTORS_PER_TRACK % 2 
     ;   - Sectors = (sectors_to_load+SECTORS_PER_FAT+3+ROOT_DIRECTORIES) % SECTORS_PER_TRACK
     
+    ; Prepare extra segment register
+    mov ax, K_CODE_SEGMENT
+    mov es, ax
+    mov bx, K_CODE_OFFSET
+    mov dl, [boot_loc]
+    mov di, [sectors_to_load]
+    mov si, [sectors_to_load]
+
+; Begin the process of loading the kernel into the memory
+load_sectors_in_memory:
+
     ; Get Sectors and Heads
     mov ax, [kernel_start_sect]
     sub ax, 2
-    mov bl, SECTORS_PER_CLUSTER
-    mul bl
+    add ax, si
+    sub ax, di
     add ax, SECTORS_PER_FAT+3+ROOT_DIRECTORIES
     push ax
-    mov bl, SECTORS_PER_TRACK
-    div bl
+    mov cl, SECTORS_PER_TRACK
+    div cl
     and al, 0x1 ; Filter last bit (same as modulo 2)
     inc ah
     mov dh, al ; Start Head
@@ -648,51 +659,44 @@ kernel_found:
 
     ; Get Cylinders
     mov ax, SECTORS_PER_TRACK
-    mov bl, 2
-    mul bl
-    mov bl, al
+    mov ch, 2
+    mul ch
+    mov ch, al
     pop ax 
-    div bl
+    div ch
     mov ch, al ; Start Cylinder
 
     ; Get other necessary parameters
-    push dx
-    mov ax, [sectors_to_load]
+    mov al, 1
     mov ah, 0x02
-    mov bx, K_CODE_OFFSET
-    mov dx, K_CODE_SEGMENT
-    mov es, dx 
-    pop dx
-    mov dl, [boot_loc]
     call _reset_floppy ; Reset just in case
 
     ; Run the command to the BIOS and determine whether the desired sectors have been loaded
     int 0x13
-    jnc kernel_loaded
+    jc panic
+    add bx, 512
+    dec di
+    cmp di, 0
+    jz kernel_loaded
+    jmp load_sectors_in_memory
+
+panic:
+    mov bx, 0xB800
+    mov es, bx
     mov bx, kernel_fail_3
     jmp fail_kernel_load
 
 ; Go to the kernel if successfully loaded (set the data segment to match; code segment is automatically set on long jump
 kernel_loaded:
 
-    ; Save contents of ax
-    push ax
-
-    ; Tell the user how many sectors are loaded
-    mov bx, sector_count_p
+    ; Tell the user that the kernel is now being loaded
+    mov bx, kernel_load_str
     mov ax, 0xB800
     mov es, ax
-    mov ch, 12
+    mov ch, 11
     mov cl, 1
-    mov dh, 0x0E
+    mov dh, 0x0A
     call _printstr
-
-    ; Print number of sectors
-    pop bx
-    mov ch, 12
-    mov cl, 27
-    mov dh, 0x0E
-    call _printnum
 
     ; Set data segment and jump to the kernel code
     mov ax, K_DATA_SEGMENT

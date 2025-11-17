@@ -25,3 +25,19 @@ unsigned short StrLen(char* str) {
     return l;
     
 }
+
+// Compares two different strings; will return 0 if different and 1 if same
+unsigned char StrCompare(char* str1, char* str2) {
+    
+    // Check if sizes are the same
+    unsigned char i = 0;
+    if (StrLen(str1) != StrLen(str2)) return 0;
+
+    // Check individual characters
+    while (i < StrLen(str1)) {
+        if (str1[i] != str2[i]) return 0;
+        i++;
+    }
+    return 1;
+
+}
