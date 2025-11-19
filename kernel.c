@@ -3,32 +3,149 @@
 #include "textmode.h"
 #include "string.h"
 #include "parser.h"
-#define VERSION_NUMBER "0.1"
+#include "disk.h"
+#include "file.h"
+
+// Parameters
+#define VERSION_NUMBER "0.15"
 #define DATA_SEGMENT 0x300
+#define FD_1440_KB 0xF0
+#define FD_1200_KB 0xF9
+#define FD_360_KB 0xFD
+#define mem(x) (x - DATA_SEGMENT*16)
 
-// Forward declaration of printing a list of commands
-void PrintHelp(unsigned char x, unsigned char y);
+// Stub to tell the program to go to the main loop
+void main286();
+void GoToMain() {
+    main286();
+}
 
-// Forward declaration of displaying information
-void PrintInfo(unsigned char x, unsigned char y);
+// Prints out a list of commands and explains what they do
+void PrintHelp(unsigned char x, unsigned char y) {
+ 
+    // Prints top boundary
+    ++y;
+    TM_PutStr("----------------------------------------------------", x, y, 0x3B);
+    
+    // This is the header
+    ++y;
+    TM_PutStr("Available Commands:", x, y, 0x3E);
+
+    // Explain what the "clear" command does
+    ++y;
+    TM_PutStr("clear", x, y, 0x3D);
+    TM_PutStr("\xAF Clears the CLI", x+8, y, 0x3F);
+
+    // Explain what "ls" does
+    ++y;
+    TM_PutStr("ls", x, y, 0x3D);
+    TM_PutStr("\xAF Lists files in the current directory", x+8, y, 0x3F);
+
+    // Explain what "create" does
+    ++y;
+    TM_PutStr("create", x, y, 0x3D);
+    TM_PutStr("\xAF Creates a file with the given name", x+8, y, 0x3F);
+
+    // Explain what "rm" does
+    ++y;
+    TM_PutStr("rm", x, y, 0x3D);
+    TM_PutStr("\xAF Deletes a given file", x+8, y, 0x3F);
+
+    // Explain what "print" does
+    ++y;
+    TM_PutStr("print", x, y, 0x3D);
+    TM_PutStr("\xAF Prints a string in the CLI", x+8, y, 0x3F);
+
+    // Explain what "info" does
+    ++y;
+    TM_PutStr("info", x, y, 0x3D);
+    TM_PutStr("\xAF Displays basic system information", x+8, y, 0x3F);
+
+    // Finally, explain what the "help" command does
+    ++y;
+    TM_PutStr("help", x, y, 0x3D);
+    TM_PutStr("\xAF Displays this help message", x+8, y, 0x3F);
+
+    // Print 
+    ++y;
+    TM_PutStr("----------------------------------------------------", x, y, 0x3B);
+}
+
+// Display system information
+void PrintInfo(unsigned char x, unsigned char y, unsigned char sig, unsigned short RAM) {
+
+    // Print a header bar
+    ++y;
+    TM_PutStr("----------------------------------------------------", x, y, 0x3B);
+    
+    // Display UI(286) version
+    ++y;
+    TM_PutStr("UI", x, y, 0x3C);
+    TM_PutStr("(", x+2, y, 0x3F);
+    TM_PutStr("286", x+3, y, 0x3B);
+    TM_PutStr(")", x+6, y, 0x3F);
+    TM_PutStr("Operating System", x+8, y, 0x3F);
+    TM_PutStr("v", x+25, y, 0x3F);
+    TM_PutStr(VERSION_NUMBER, x+26, y, 0x3C);
+
+    // Print the amount of memory in KB
+    ++y;
+    TM_PutStr("Conventional RAM detected:", x, y, 0x3F);
+    TM_PutUInt(RAM, x+27, y, 0x3E);
+    TM_PutStr("KB", x+31, y, 0x3F);
+
+    // Print what disk UI(286) is using
+    ++y;
+    TM_PutStr("Loaded from:", x, y, 0x3F);
+    switch (sig) {
+        case FD_360_KB:
+            TM_PutStr("5.25\" 360 KB Floppy Disk", x+13, y, 0x3F);
+            break;
+        case FD_1200_KB:
+            TM_PutStr("5.25\" 1.2 MB Floppy Disk", x+13, y, 0x3F);
+            break;
+        case FD_1440_KB:
+            TM_PutStr("3.5\" 1.44 MB Floppy Disk", x+13, y, 0x3F);
+            break;
+    }
+
+    // Print the author
+    y += 2;
+    TM_PutStr("A hobbyist operating system made by Edward Bierens", x, y, 0x3B);
+    
+    // Print footer bar
+    ++y;
+    TM_PutStr("----------------------------------------------------", x, y, 0x3B);
+    
+}
 
 // Main kernel function
 void main286() {
 
     // Pre-declare variables
-    short i;
-    char* welcome = "Welcome to the UI(286) Operating System v0.1!";
-    char* note = "UI(286) Shell v0.15";
-    char* prompt = "286sh @ ";
-    char* unknown = "ERROR: Could not recognize command!";
-    char* keybuff; // I would use char keybuff[50] here, but for some reason it only works with this
-    char x = 9, y = 5;
-  
+    static char* welcome = "Welcome to the UI(286) Operating System v0.15!";
+    static char* note = "UI(286) Shell v0.3";
+    static char* prompt = "286sh @ ";
+    static char* unknown = "ERROR: Could not recognize command!";
+    static char* keybuff; // I would use char keybuff[50] here, but for some reason it only works with this
+    static short* memsize_loc = (short*) mem(0x7BFD);
+    static char* disk_descriptor_loc = (char*) mem(0x7BFF);
+    static struct FATEntry* ent;
+    static unsigned char x = 9, y = 5;
+    static short res, i, j, k;
+
     // Beep for a specified amount of times while increasing the frequency
     for (i = 0; i < 5; i++) {
         beep(1046-i*i*10, 75000);
         delay(500);
     }
+
+    // Copy values from boot sector to the kernel data
+    *memsize_loc = *((unsigned short*) mem(0x7DFA));
+    *disk_descriptor_loc = *((unsigned char*) mem(0x7C15));
+
+    // (TEMPORARY!) This buffer has to be initialized somewhere reasonable, OpenWatcom will NOT initialize it!
+    keybuff = (char*) 0x7000 - DATA_SEGMENT;
 
     // Clear screen
     TM_BlankScreen(0x30);
@@ -40,9 +157,6 @@ void main286() {
     TM_PutStr(welcome, 1, 2, 0x3F);
     TM_PutStr(note, 1, 3, 0x39);
     TM_PutStr(prompt, 1, 5, 0x3F);
-    
-    // (TEMPORARY!) This buffer has to be initialized somewhere reasonable, OpenWatcom will NOT initialize it!
-    keybuff = (char*) 0x7000 - DATA_SEGMENT;
     
     // Command line
     while (1) {
@@ -118,6 +232,55 @@ void main286() {
                 continue;
 
             case LIST_FILES: // List files command
+
+                // Load 
+                res = LoadSector(SPF+3, 0x7C00, (MAX_ENTRIES*0x40) / 512, 0);
+                if (res < 0) {
+                    ++y;
+                    if (y >= TM_HEIGHT - 1) {
+                        ScrollConsoleDown(0x30);
+                        y = TM_HEIGHT - 2;
+                    }
+                    TM_PutStr("Disk failed to load, is it inserted?", 1, y, 0x34);
+                    break;
+                }
+
+                ent = (struct FATEntry*) mem(0x7C00);
+
+                for (k = 0; k < MAX_ENTRIES && ent->name[0] != 0; k++, ent++) {
+                    
+                    if (ent->name[0] == 0xE5) continue;
+
+                    ++y;
+                    if (y >= TM_HEIGHT - 1) {
+                        ScrollConsoleDown(0x30);
+                        y = TM_HEIGHT - 2;
+                    }
+                    
+                    if ((ent->attr & 0x10) != 0) TM_PutStr("[D]", 1, y, 0x3E);
+                    else TM_PutStr("[F]", 1, y, 0x3F);
+                    x = 5;
+
+                    if ((ent->attr & 0x10) != 0) {
+
+                        for (i = 0; i < 11 && ent->name[i] != ' '; i++) keybuff[i] = ent->name[i];
+                        keybuff[i] = 0;
+                        TM_PutStr(keybuff, x, y, 0x3E);
+
+                    } else {
+
+                        for (i = 0; i < 8 && ent->name[i] != ' '; i++) keybuff[i] = ent->name[i];
+                        keybuff[i] = '.';
+                        ++i;
+                        for (j = 0; j < 3; j++) keybuff[i+j] = ent->extension[j];
+                        keybuff[i+j] = 0;
+                        TM_PutStr(keybuff, x, y, 0x3F);
+
+                    }
+                }
+
+                break;
+
             case CREATE_FILE: // Create a file command
             case DELETE_FILE: // Delete a file command
 
@@ -174,7 +337,7 @@ void main286() {
                 }
 
                 // Print out the version information
-                PrintInfo(1, y-7);
+                PrintInfo(1, y-7, *disk_descriptor_loc, *memsize_loc);
                 break;
                 
             default: // Unknown command
@@ -203,107 +366,4 @@ void main286() {
         x = 9;
 
     }
-}
-
-// Prints out a list of commands and explains what they do
-void PrintHelp(unsigned char x, unsigned char y) {
- 
-    // Prints top boundary
-    ++y;
-    TM_PutStr("----------------------------------------------------", x, y, 0x3B);
-    
-    // This is the header
-    ++y;
-    TM_PutStr("Available Commands:", x, y, 0x3E);
-
-    // Explain what the "clear" command does
-    ++y;
-    TM_PutStr("clear", x, y, 0x3D);
-    TM_PutStr("\xAF Clears the CLI", x+8, y, 0x3F);
-
-    // Explain what "ls" does
-    ++y;
-    TM_PutStr("ls", x, y, 0x3D);
-    TM_PutStr("\xAF Lists files in the current directory", x+8, y, 0x3F);
-
-    // Explain what "create" does
-    ++y;
-    TM_PutStr("create", x, y, 0x3D);
-    TM_PutStr("\xAF Creates a file with the given name", x+8, y, 0x3F);
-
-    // Explain what "rm" does
-    ++y;
-    TM_PutStr("rm", x, y, 0x3D);
-    TM_PutStr("\xAF Deletes a given file", x+8, y, 0x3F);
-
-    // Explain what "print" does
-    ++y;
-    TM_PutStr("print", x, y, 0x3D);
-    TM_PutStr("\xAF Prints a string in the CLI", x+8, y, 0x3F);
-
-    // Explain what "info" does
-    ++y;
-    TM_PutStr("info", x, y, 0x3D);
-    TM_PutStr("\xAF Displays basic system information", x+8, y, 0x3F);
-
-    // Finally, explain what the "help" command does
-    ++y;
-    TM_PutStr("help", x, y, 0x3D);
-    TM_PutStr("\xAF Displays this help message", x+8, y, 0x3F);
-
-    // Print 
-    ++y;
-    TM_PutStr("----------------------------------------------------", x, y, 0x3B);
-}
-
-// Display system information
-void PrintInfo(unsigned char x, unsigned char y) {
-
-    // Determine what the memory and the disk signature are using code from the boot sector
-    unsigned short RAM = *((unsigned short*) (0x7DFA - DATA_SEGMENT*16));
-    unsigned char sig = *((unsigned char*) (0x7C15 - DATA_SEGMENT*16));
-
-    // Print a header bar
-    ++y;
-    TM_PutStr("----------------------------------------------------", x, y, 0x3B);
-    
-    // Display UI(286) version
-    ++y;
-    TM_PutStr("UI", x, y, 0x3C);
-    TM_PutStr("(", x+2, y, 0x3F);
-    TM_PutStr("286", x+3, y, 0x3B);
-    TM_PutStr(")", x+6, y, 0x3F);
-    TM_PutStr("Operating System", x+8, y, 0x3F);
-    TM_PutStr("v", x+25, y, 0x3F);
-    TM_PutStr(VERSION_NUMBER, x+26, y, 0x3C);
-
-    // Print the amount of memory in KB
-    ++y;
-    TM_PutStr("Conventional RAM detected:", x, y, 0x3F);
-    TM_PutUInt(RAM, x+27, y, 0x3E);
-    TM_PutStr("KB", x+31, y, 0x3F);
-
-    // Print what disk UI(286) is using
-    ++y;
-    TM_PutStr("Loaded from:", x, y, 0x3F);
-    switch (sig) {
-        case 0xFD:
-            TM_PutStr("5.25\" 360 KB Floppy Disk", x+13, y, 0x3F);
-            break;
-        case 0xF9:
-            TM_PutStr("5.25\" 1.2 MB Floppy Disk", x+13, y, 0x3F);
-            break;
-        case 0xF0:
-            TM_PutStr("3.5\" 1.44 MB Floppy Disk", x+13, y, 0x3F);
-            break;
-    }
-
-    // Print the author
-    y += 2;
-    TM_PutStr("A hobbyist operating system made by Edward Bierens", x, y, 0x3B);
-    
-    // Print footer bar
-    ++y;
-    TM_PutStr("----------------------------------------------------", x, y, 0x3B);
-    
 }
