@@ -1,10 +1,10 @@
-#include "speaker.h"
-#include "time.h"
-#include "textmode.h"
-#include "string.h"
-#include "parser.h"
-#include "disk.h"
-#include "file.h"
+#include <speaker.h>
+#include <time.h>
+#include <textmode.h>
+#include <string.h>
+#include <parser.h>
+#include <disk.h>
+#include <file.h>
 
 // Parameters
 #define VERSION_NUMBER "0.15"
@@ -233,7 +233,7 @@ void main286() {
 
             case LIST_FILES: // List files command
 
-                // Load 
+                // Load sectors into where the boot sector originally lived
                 res = LoadSector(SPF+3, 0x7C00, (MAX_ENTRIES*0x40) / 512, 0);
                 if (res < 0) {
                     ++y;
@@ -245,30 +245,38 @@ void main286() {
                     break;
                 }
 
+                // Point the entry structure template to the first FAT entry
                 ent = (struct FATEntry*) mem(0x7C00);
 
+                // Loop through every entry
                 for (k = 0; k < MAX_ENTRIES && ent->name[0] != 0; k++, ent++) {
                     
+                    // Skip deleted entries (starts with 0xE5)
                     if (ent->name[0] == 0xE5) continue;
 
+                    // Reserve another line of video memory
                     ++y;
                     if (y >= TM_HEIGHT - 1) {
                         ScrollConsoleDown(0x30);
                         y = TM_HEIGHT - 2;
                     }
                     
+                    // Print determination whether this is a file or a directory (located in attribute byte)
                     if ((ent->attr & 0x10) != 0) TM_PutStr("[D]", 1, y, 0x3E);
                     else TM_PutStr("[F]", 1, y, 0x3F);
                     x = 5;
 
-                    if ((ent->attr & 0x10) != 0) {
+                    // Determine how to print the file name based on whether it is a file or directory
+                    if ((ent->attr & 0x10) != 0) { // Directory
 
+                        // Print full 11-character file name
                         for (i = 0; i < 11 && ent->name[i] != ' '; i++) keybuff[i] = ent->name[i];
                         keybuff[i] = 0;
                         TM_PutStr(keybuff, x, y, 0x3E);
 
-                    } else {
+                    } else { // File
 
+                        // Print 8 characters for the name, followed by a dot and then 3 characters for extension
                         for (i = 0; i < 8 && ent->name[i] != ' '; i++) keybuff[i] = ent->name[i];
                         keybuff[i] = '.';
                         ++i;
