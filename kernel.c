@@ -12,7 +12,6 @@
 #define FD_1440_KB 0xF0
 #define FD_1200_KB 0xF9
 #define FD_360_KB 0xFD
-#define mem(x) (x - DATA_SEGMENT*16)
 
 // Stub to tell the program to go to the main loop
 void main286();
@@ -123,16 +122,18 @@ void PrintInfo(unsigned char x, unsigned char y, unsigned char sig, unsigned sho
 void main286() {
 
     // Pre-declare variables
-    static char* welcome = "Welcome to the UI(286) Operating System v0.15!";
-    static char* note = "UI(286) Shell v0.3";
-    static char* prompt = "286sh @ ";
-    static char* unknown = "ERROR: Could not recognize command!";
-    static char* keybuff; // I would use char keybuff[50] here, but for some reason it only works with this
-    static short* memsize_loc = (short*) mem(0x7BFD);
-    static char* disk_descriptor_loc = (char*) mem(0x7BFF);
-    static struct FATEntry* ent;
-    static unsigned char x = 9, y = 5;
-    static short res, i, j, k;
+    char* welcome = "Welcome to the UI(286) Operating System v0.15!";
+    char* note = "UI(286) Shell v0.3";
+    char* prompt = "286sh @ ";
+    char* unknown = "ERROR: Could not recognize command!";
+    char* keybuff = (char*) mem(0x7000);
+    char* namebuff = (char*) mem(0x7032);
+    short* memsize_loc = (short*) mem(0x7BFD);
+    char* disk_descriptor_loc = (char*) mem(0x7BFF);
+    struct FATEntry* ent;
+    unsigned char x = 9, y = 5;
+    short res, i, j, k;
+    char c;
 
     // Beep for a specified amount of times while increasing the frequency
     for (i = 0; i < 5; i++) {
@@ -143,9 +144,6 @@ void main286() {
     // Copy values from boot sector to the kernel data
     *memsize_loc = *((unsigned short*) mem(0x7DFA));
     *disk_descriptor_loc = *((unsigned char*) mem(0x7C15));
-
-    // (TEMPORARY!) This buffer has to be initialized somewhere reasonable, OpenWatcom will NOT initialize it!
-    keybuff = (char*) 0x7000 - DATA_SEGMENT;
 
     // Clear screen
     TM_BlankScreen(0x30);
@@ -165,7 +163,7 @@ void main286() {
         for (i = 0; i < 50; i++) {
 
             // Get the current character
-            keybuff[i] = GetChar();
+            keybuff[i] = GetChar_H();
 
             // Execute on carriage return (enter pressed)
             if (keybuff[i] == 0xD) break;
@@ -234,7 +232,7 @@ void main286() {
             case LIST_FILES: // List files command
 
                 // Load sectors into where the boot sector originally lived
-                res = LoadSector(SPF+3, 0x7C00, (MAX_ENTRIES*0x40) / 512, 0);
+                res = ReadSector(SPF+3, 0x7C00, (MAX_ENTRIES*0x40) / 512, 0);
                 if (res < 0) {
                     ++y;
                     if (y >= TM_HEIGHT - 1) {
@@ -292,17 +290,50 @@ void main286() {
             case CREATE_FILE: // Create a file command
             case DELETE_FILE: // Delete a file command
 
-                // Reserve the next line (scroll if needed)
+                // Ignore extra whitespace
+                i = 2;
+                if (ChooseCommand(keybuff) == CREATE_FILE) i = 6;          
+                else if (ChooseCommand(keybuff) == DELETE_FILE) i = 2;
+                while (keybuff[i] == ' ') ++i;
+
+                // Scroll down a line and throw an error if only the command was provided
+                if (keybuff[i] == 0) {
+                    ++y;
+                    if (y >= TM_HEIGHT - 1) {
+                        ScrollConsoleDown(0x30);
+                        y = TM_HEIGHT - 2;
+                    }
+                    TM_PutStr("File was not provided!", 1, y, 0x34);
+                    break;
+                }
+
+                // Extract the name of the file to work with
+                for (j = 0; j < 12 && keybuff[i] != 0 && keybuff[i] != ' '; j++,i++) namebuff[j] = keybuff[i];
+
+                // Terminate string and create or delete the file depending on the command
+                namebuff[j] = 0;  
+                if (ChooseCommand(keybuff) == CREATE_FILE) res = CreateFile(namebuff, (struct FATEntry*) mem(0x7C00));              
+                else if (ChooseCommand(keybuff) == DELETE_FILE) res = DeleteFile(namebuff, (struct FATEntry*) mem(0x7C00));
+
+                // Clear the name buffer
+                for (j = 0; j < 11; j++) namebuff[j] = 0;
+                
+                // Scroll down a line
                 ++y;
                 if (y >= TM_HEIGHT - 1) {
                     ScrollConsoleDown(0x30);
                     y = TM_HEIGHT - 2;
-                }
-
-                // Print out the buffer
-                TM_PutChar(0xAF, 1, y, 0x3E);
-                TM_PutStr(keybuff, 3, y, 0x3D);
+                }                        
+                        
+                // Print corresponding message
+                if (res == -1) TM_PutStr("ERROR: Disk could not be read from.", 1, y, 0x34);
+                else if (res == -2) TM_PutStr("ERROR: File could not be found.", 1, y, 0x34);
+                else if (res == -3) TM_PutStr("ERROR: Disk could not be updated.", 1, y, 0x34);
+                else if (res == -4) TM_PutStr("ERROR: Disk is full, cannot create file.", 1, y, 0x34);
+                else if (res >= 0) TM_PutStr("Success!", 1, y, 0x3B);
+                else TM_PutStr("ERROR: UNKNOWN ERROR.", 1, y, 0x34);
                 break;
+
 
             case PRINT_STR: // Print a given string command
 

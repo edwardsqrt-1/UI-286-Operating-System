@@ -28,8 +28,8 @@ UI(286) will have 7 commands available in the CLI:
 
 - `clear` to clear the CLI window
 - `ls` to get a list of all of the files
-- `create <file>` makes a file [NOT IMPLEMENTED] 
-- `rm <file>` deletes a file [NOT IMPLEMENTED] 
+- `create <file>` makes a file
+- `rm <file>` deletes a file
 - `print [sentence]` takes the input afterwards and prints it to the screen
 - `info` displays basic system information
 - `help` brings up the list of commands

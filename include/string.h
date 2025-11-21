@@ -4,6 +4,9 @@
 // Function to return a character value from the keyboard
 char GetChar();
 
+// Function to halt until a character is read from the keyboard
+char GetChar_H();
+
 // Function to get the length of a string
 unsigned short StrLen(char* str);
 

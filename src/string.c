@@ -1,13 +1,39 @@
 #include "string.h"
+#include "disk.h"
 
-// Get a character from the keyboard
+// Get a character from the keyboard without blocking execution
 char GetChar() {
 
-    // Use the BIOS interrupt to get a character from the keyboard automatically
-    // Will be subject to change
-    char res;
+    // Passively get keyboard input and if input exists
+    char res = 0;
+    char pressed = 0;
     __asm {
-        xor ax, ax
+        mov ah, 0x1
+        xor al, al
+        int 0x16
+        jz keydone
+
+        xor ah, ah
+        int 0x16
+        mov res, al
+        mov pressed, 1
+
+        keydone:
+    }
+
+    // Return the resulting character if a key was pressed to begin with
+    if (pressed) return res;
+    return 0;
+
+}
+
+// Wait for a character from the keyboard 
+char GetChar_H() {
+
+    // Use the BIOS interrupt to get a character from the keyboard
+    char res = 0;
+    __asm {
+        xor ah, ah
         int 0x16
         mov res, al
     }

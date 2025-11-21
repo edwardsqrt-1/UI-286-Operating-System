@@ -1,5 +1,8 @@
 #ifndef DISK_H
 #define DISK_H
+#define DATA_SEGMENT 0x300 // Data segment value 
+#define mem(x) (x - DATA_SEGMENT*16) // Apply data offset to get the location in relation to the data segment
+#define ptr(x) ((unsigned short)x + DATA_SEGMENT*16) // Convert pointer into a memory address as an integer
 
 #if floppy == 360 // Define parameters for 5.25" 360 KB FDD
 
@@ -28,6 +31,9 @@
 #endif
 
 // Function to load a sector from the disk (written as LBA); 0 = success and -1 = failure
-short LoadSector(unsigned short lba, unsigned long addr, unsigned char sectors, unsigned char drive);
+short ReadSector(unsigned short lba, unsigned long addr, unsigned char sectors, unsigned char drive);
+
+// Function to store a sector on the disk at an LBA address; 0 = success and -1 = failure
+short WriteSector(unsigned short lba, unsigned long addr, unsigned char sectors, unsigned char drive);
 
 #endif
