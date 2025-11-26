@@ -33,7 +33,7 @@ void ScrollConsoleDown(char attr);
 // Procedure to change the location of the text cursor
 void TM_SetCursor(unsigned char x, unsigned char y);
 
-// Procedure to set a title
-void TM_SetTitle(char* title);
+// Initialize the text user interface
+void TM_TUIInit(char* title_text, unsigned char attr);
 
 #endif

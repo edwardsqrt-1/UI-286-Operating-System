@@ -11,6 +11,7 @@
 #define MAX_ENTRIES 55
 #define ROOT_DIRS 7
 #define SPF 2
+#define SPC 2
 
 #elif floppy == 1440 // Define parameters for 3.5" 1.44 MB FDD
 
@@ -19,6 +20,7 @@
 #define MAX_ENTRIES 111
 #define ROOT_DIRS 14
 #define SPF 9
+#define SPC 1
 
 #else // Default is 5.25" 1.2 MB FDD
 
@@ -27,6 +29,7 @@
 #define MAX_ENTRIES 111
 #define ROOT_DIRS 14
 #define SPF 7
+#define SPC 1
 
 #endif
 

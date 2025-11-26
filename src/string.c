@@ -67,3 +67,22 @@ unsigned char StrCompare(char* str1, char* str2) {
     return 1;
 
 }
+
+// Concatenates str2 at the end of str1
+void StrCat(char* str1, char* str2) {
+
+    // Find null character
+    char* beginConcat = str1;
+    while (*beginConcat != 0) ++beginConcat;
+
+    // Copy from string 2 to the end of string 1
+    while (*str2 != 0) {
+        *beginConcat = *str2;
+        ++beginConcat;
+        ++str2;
+    }
+
+    // Terminate string
+    *beginConcat = 0;
+
+}

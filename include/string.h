@@ -14,4 +14,7 @@ unsigned short StrLen(char* str);
 // Note: 0 = different and 1 = same
 unsigned char StrCompare(char* str1, char* str2);
 
+// Procedure to concatenate two strings
+void StrCat(char* str1, char* str2);
+
 #endif

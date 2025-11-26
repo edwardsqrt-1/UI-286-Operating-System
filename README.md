@@ -20,7 +20,7 @@ I intend to have a more elegant setup upon closer to completion, however these a
 - Link object files together from compiling kernel
     - `wlink name '.\kernel.bin' output raw offset=0x700 format dos file '*.obj' order clname CODE offset=0x700 clname DATA offset=0x3000`
 
-- The generated kernel.bin file must then be placed within the floppy disk image boot.img. This can be done with a program such as PowerISO, just as long as kernel.bin is the first file ever placed on the disk (the bootloader will not look past the first entry). Files and folders can then be added as necessary.
+- The generated kernel.bin file must then be placed within the floppy disk image boot.img. This can be done with a program such as PowerISO, just as long as kernel.bin is the first file ever placed on the disk and that snake.286 is the second (the bootloader will not look past the first entry). Files and folders can then be added as necessary.
 
 ## Commands Implemented
 
@@ -36,11 +36,26 @@ UI(286) will have 7 commands available in the CLI:
 
 These were mainly based off of the commands in UNIX, but some have been slightly modified to make more sense to the user.
 
+## Applications
+
+UI(286) has three example applications:
+- `SNAKE.286` is a simple snake game that actually just lets you draw on the screen. The controls are:
+    - W, A, S, and D for keyboard controls
+    - Space Bar to pause
+    - C to change color of snake
+    - Enter to exit the game and go back to the CLI
+- `TEXT.286` is a text editor \[COMING SOON\]
+- `DEMO.286` is a set of graphics designed to look cool; think screen-savers \[COMING SOON\]
+
 ## Credits
 
 This project would have not been possible without the sound advice given by OSDev.org https://wiki.osdev.org/Expanded_Main_Page
 
 For an in-depth guide as to how different computer components work, the book *The Indispensable PC Hardware Book* by Hans-Peter Messmer is an extremely helpful resource. The edition used in UI(286) development is the 1994 edition.
+
+Two good resources for navigating OpenWatcom's C Compiler and Linker can be found here:
+- OpenWatcom's C Documentation https://open-watcom.github.io/open-watcom-v2-wikidocs/clr.html
+- A guide to memory models in Watcom https://users.pja.edu.pl/~jms/qnx/help/watcom/compiler16/wmodels.html#16BitDataModels
 
 Special thanks to the following pieces of software for emulating and debugging UI(286):
 

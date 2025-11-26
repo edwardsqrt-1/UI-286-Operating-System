@@ -31,7 +31,7 @@ struct FATEntry* FindFile(char* name, struct FATEntry* fileSource);
 // 1 = Disk read error
 // 2 = File not found
 // 3 = Disk write error
-// 4 = Disk full
+// 4 = Maximum entries in disk reached
 short CreateFile(char* name, struct FATEntry* fileSource);
 short DeleteFile(char* name, struct FATEntry* fileSource);
 

@@ -70,6 +70,62 @@ void PrintHelp(unsigned char x, unsigned char y) {
     TM_PutStr("----------------------------------------------------", x, y, 0x3B);
 }
 
+// Function to call an app
+void CallApp() {
+
+    
+    // Initialize variables and the segment + offset of the program to load
+    int i;
+    unsigned short seg = 0x1000;
+    unsigned short off = 0;
+
+    // Create a function definition at that faraway address
+    typedef void (__far * prog)(void);
+    prog main = (prog) (void __far *) (((unsigned long)(seg) << 16) + (unsigned long)(off));
+
+    // Create backup of video memory at 0x5000
+    __asm {
+        mov ax, 0xB800
+        mov es, ax
+        mov di, 0x5000
+        xor si, si
+    }
+    for (i = 0; i < 80*25*2; i++) {
+        __asm {
+            mov al, [es:si]
+            mov [ds:di], al
+            inc si
+            inc di
+        }
+    }
+
+    // Load program
+    main();
+
+    // Restore the data segment
+    __asm {
+        mov ax, 0x300
+        mov ds, ax
+    }
+
+    // Restore video memory
+    __asm {
+        mov ax, 0xB800
+        mov es, ax
+        mov si, 0x5000
+        xor di, di
+    }
+    for (i = 0; i < 80*25*2; i++) {
+        __asm {
+            mov al, [ds:si]
+            mov [es:di], al
+            inc si
+            inc di
+        }
+    }
+
+}
+
 // Display system information
 void PrintInfo(unsigned char x, unsigned char y, unsigned char sig, unsigned short RAM) {
 
@@ -133,7 +189,12 @@ void main286() {
     struct FATEntry* ent;
     unsigned char x = 9, y = 5;
     short res, i, j, k;
+    unsigned long sectors;
     char c;
+
+    // Copy values from boot sector to the kernel data
+    *memsize_loc = *((unsigned short*) mem(0x7DFA));
+    *disk_descriptor_loc = *((unsigned char*) mem(0x7C15));
 
     // Beep for a specified amount of times while increasing the frequency
     for (i = 0; i < 5; i++) {
@@ -141,23 +202,21 @@ void main286() {
         delay(500);
     }
 
-    // Copy values from boot sector to the kernel data
-    *memsize_loc = *((unsigned short*) mem(0x7DFA));
-    *disk_descriptor_loc = *((unsigned char*) mem(0x7C15));
-
     // Clear screen
     TM_BlankScreen(0x30);
 
     // Add two strings; one for welcome message and one as a note (also includes prompt)
-    TM_PutStr(bar, 0, 0, 0x19);
-    TM_PutStr(bar, 0, 24, 0x19);
-    TM_SetTitle("\xDB UI(286) CLI \xDB");
+    TM_TUIInit("\xDB UI(286) CLI \xDB", 0x19);
     TM_PutStr(welcome, 1, 2, 0x3F);
     TM_PutStr(note, 1, 3, 0x39);
     TM_PutStr(prompt, 1, 5, 0x3F);
     
     // Command line
     while (1) {
+
+        // Clear buffers
+        for (i = 0; i < 50; i++) keybuff[i] = 0;
+        for (i = 0; i < 10; i++) namebuff[i] = 0;
 
         // Get keyboard input for 50 characters and echo; "execute" on enter
         for (i = 0; i < 50; i++) {
@@ -379,20 +438,54 @@ void main286() {
                 PrintInfo(1, y-7, *disk_descriptor_loc, *memsize_loc);
                 break;
                 
-            default: // Unknown command
-                
-                // Scroll down to the next line
-                ++y;
-                if (y >= TM_HEIGHT - 1) {
-                    ScrollConsoleDown(0x30);
-                    y = TM_HEIGHT - 2;
+            default: // Unknown 
+            
+                // Look for executable
+                StrCat(keybuff, ".286");
+                ent = FindFile(keybuff, (struct FATEntry*) mem(0x7C00));
+
+                // Check if the entry exists
+                if (ent) {                    
+
+                    // Load entry
+                    sectors = ent->size >> 9;
+                    res = ReadSector((ent->sector)+(SPF+3+ROOT_DIRS)*SPC - 2, 0x10000, sectors, 0);
+                    if (res < 0) {
+
+                        // Scroll down to the next line
+                        ++y;
+                        if (y >= TM_HEIGHT - 1) {
+                            ScrollConsoleDown(0x30);
+                            y = TM_HEIGHT - 2;
+                        }
+
+                        // Print out a failed to load sectors command
+                        TM_PutStr("Failed to load sectors to load program!", 1, y, 0x34);
+
+                    // Otherwise, it is ready for the program to load
+                    } else CallApp();
+                    break;
+
+                } else { // Entry does not exist
+
+                    // Scroll down to the next line
+                    ++y;
+                    if (y >= TM_HEIGHT - 1) {
+                        ScrollConsoleDown(0x30);
+                        y = TM_HEIGHT - 2;
+                    }
+
+                    // Print out an unknown command
+                    TM_PutStr(unknown, 1, y, 0x34);
+                    break;
                 }
 
-                // Print out the buffer
-                TM_PutStr(unknown, 1, y, 0x34);
-                break;
         }   
         
+        // Clear buffer
+        for (i = 0; i < 50; i++) keybuff[i] = 0;
+        for (i = 0; i < 10; i++) namebuff[i] = 0;
+
         // Scroll down another line if needed
         ++y;
         if (y >= TM_HEIGHT - 1) {
@@ -406,3 +499,5 @@ void main286() {
 
     }
 }
+
+

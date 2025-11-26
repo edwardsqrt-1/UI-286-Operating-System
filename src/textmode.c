@@ -87,7 +87,7 @@ void TM_PutChar(char c, unsigned char x, unsigned char y, unsigned char attr) {
 
 }
 
-// Prints out a number into the video memory
+// Prints out a number of a given base into the video memory
 void TM_PutUIntB(unsigned short num, unsigned short base, unsigned char x, unsigned char y, unsigned char attr) {
 
     // Calculate offset
@@ -97,6 +97,7 @@ void TM_PutUIntB(unsigned short num, unsigned short base, unsigned char x, unsig
     unsigned short res;
     unsigned char count = 0;
 
+    // Keep dividing number and pushing to the stack until the number reaches 0
     while (num != 0) {
 
         res = num % base;
@@ -110,6 +111,7 @@ void TM_PutUIntB(unsigned short num, unsigned short base, unsigned char x, unsig
 
     }
 
+    // Initialize video memory
     __asm {
         mov ax, 0xB800
         mov es, ax
@@ -117,6 +119,7 @@ void TM_PutUIntB(unsigned short num, unsigned short base, unsigned char x, unsig
         mov al, attr
     }
 
+    // Pop digits from stack and display them on screen for the number of times the number was divided
     while (count != 0) {
 
         __asm {
@@ -126,12 +129,12 @@ void TM_PutUIntB(unsigned short num, unsigned short base, unsigned char x, unsig
             mov [es:di+1], al
             add di, TM_BYTES_PER_PIXEL
         }
-
         count--;
 
     }
 }
 
+// Special function to print base 10 numbers
 void TM_PutUInt(unsigned short num, unsigned char x, unsigned char y, unsigned char attr) {
     TM_PutUIntB(num, 10, x, y, attr);
 }
@@ -227,10 +230,8 @@ void ScrollConsoleDown(char attr) {
         }
     }
 
-    // Add bars and title
-    TM_PutStr(bar, 0, 0, 0x19);
-    TM_SetTitle("\xDB UI(286) CLI \xDB");
-    TM_PutStr(bar, 0, TM_HEIGHT-1, 0x19);
+    // Re-add bars and title
+    TM_TUIInit("\xDB UI(286) CLI \xDB", 0x19);
 
 }
 
@@ -266,12 +267,17 @@ void TM_SetCursor(unsigned char x, unsigned char y) {
 
 }
 
-void TM_SetTitle(char* title) {
+// Create the title bars and title
+void TM_TUIInit(char* title_text, unsigned char attr) {
 
+    // Create necessary calculation helpers
     unsigned short i = 0;
-    unsigned short title_len = StrLen(title);
+    unsigned short title_len = StrLen(title_text);
     unsigned short position = (TM_WIDTH - title_len) / 2;
-    char c;
 
-    TM_PutStr(title, position, 0, 0x1F);
+    // Print the two bars and title
+    TM_PutStr(bar, 0, 0, attr);
+    TM_PutStr(bar, 0, TM_HEIGHT-1, attr);
+    TM_PutStr(title_text, position, 0, (attr & 0xF0) | 0x0F);
+
 }

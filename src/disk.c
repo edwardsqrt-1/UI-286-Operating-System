@@ -47,7 +47,7 @@ short ReadSector(unsigned short lba, unsigned long addr, unsigned char sectors, 
         addr += 512;
         s++;
 
-    } while (s < sectors); // Stop when desired sector amount is reached
+    } while (s <= sectors); // Stop when desired sector amount is reached
 
     return res;
 }
@@ -99,7 +99,7 @@ short WriteSector(unsigned short lba, unsigned long addr, unsigned char sectors,
         addr += 512;
         s++;
 
-    } while (s < sectors); // Stop when desired sector amount is reached
+    } while (s < sectors+1); // Stop when desired sector amount is reached (load one more in case there's overhead)
 
     return res;
 }
