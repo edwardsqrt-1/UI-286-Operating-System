@@ -1,3 +1,15 @@
+/*
+ * Program: UI(286) Snake
+ * Author: Edward Bierens
+ * Date Created: Tuesday November 25th, 2025
+ * 
+ * Description: This is a simple "snake" game where you can draw a snake
+ * around on the screen. W,A,S,D keys control the snake like a typical
+ * video game, C changes the color of the snake, and Space pauses the game.
+ * Hitting Enter will close the program and return to the CLI.
+ * 
+ */
+
 #include <string.h>
 #include <textmode.h>
 #include <time.h>

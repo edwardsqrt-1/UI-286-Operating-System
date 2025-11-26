@@ -1,3 +1,23 @@
+/*
+ * Program: UI(286) Kernel / Command Line Interface (286 Shell)
+ * Author: Edward Bierens
+ * Date Created: Monday November 24th, 2025
+ * 
+ * Description: This is a piece of command line software that acts as the kernel for UI(286).
+ * The possible commands that can be given are as follows (cross-listed from README.md):
+ *  - `clear` to clear the CLI window
+ *  - `ls` to get a list of all of the files
+ *  - `create <file>` makes a file
+ *  - `rm <file>` deletes a file
+ *  - `print [sentence]` takes the input afterwards and prints it to the screen
+ *  - `info` displays basic system information
+ *  - `help` brings up the list of commands
+ * 
+ * Alternatively, a 286 file can be loaded in the filesystem. Such files are automatically
+ * viewed as executables by UI(286).
+ * 
+ */
+
 #include <speaker.h>
 #include <time.h>
 #include <textmode.h>
