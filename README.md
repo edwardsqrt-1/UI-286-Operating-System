@@ -1,26 +1,16 @@
 # UI-286-Operating-System
-This is a simple operating system for some of the oldest PCs that have long since been abandoned support by modern operating systems such as Linux and in some cases some BSD distributions. While it is not intended to be a UNIX-like system, many commands will be more familiar to said systems such as the `ls` and `cd` commands for example. 
 
-## Tenative Installation Steps
-I intend to have a more elegant setup upon closer to completion, however these are the steps to build (tested on Windows 10 with OpenWatcom and NASM):
+This is a simple operating system for some of the oldest PCs with 286 and 8088 processors that have long since been dropped by modern operating systems. It is less of a system to replace your workstation and moreso a demonstration of what older computers can still do in the modern day with the right technical knowhow. While it is not intended to be a UNIX-like system, many commands will be more familiar to said systems such as the `ls` and `rm` commands for example, though the `creat` command has been modified to be `create` instead. 
 
-- Create Disk
-    - `nasm -f bin boot.asm -o boot.img -dfloppy=<360|1200|1440>`
+## Installation Steps
 
-- Compile Kernel Sources
-    - `wcc -0 -s -zl -zld -zls .\kernel.c -dfloppy=<360|1200|1440>`
-    - `wcc -0 -s -zl -zld -zls .\disk.c -dfloppy=<360|1200|1440>`
-    - `wcc -0 -s -zl -zld -zls .\file.c`
-    - `wcc -0 -s -zl -zld -zls .\parser.c`
-    - `wcc -0 -s -zl -zld -zls .\speaker.c`
-    - `wcc -0 -s -zl -zld -zls .\string.c`
-    - `wcc -0 -s -zl -zld -zls .\textmode.c`
-    - `wcc -0 -s -zl -zld -zls .\time.c`
+I have provided the instructions to create the disk image for UI(286) within the `make.bat` file. Windows users that have OpenWatcom and NASM installed and placed in their path may run this file to automatically generate a floppy disk image, HOWEVER make.bat must be supplied one of the three values for `floppy` in the format `.\make.bat <floppy>`:
 
-- Link object files together from compiling kernel
-    - `wlink name '.\kernel.bin' output raw offset=0x700 format dos file '*.obj' order clname CODE offset=0x700 clname DATA offset=0x3000`
+- `360` for a 5.25" 360 KB Floppy Disk
+- `1200` for a 5.25" 1.2 MB Floppy Disk
+- `1440` for a 3.5" 1.44 MB Floppy Disk
 
-- The generated kernel.bin file must then be placed within the floppy disk image boot.img. This can be done with a program such as PowerISO, just as long as kernel.bin is the first file ever placed on the disk and that snake.286 is the second (the bootloader will not look past the first entry). Files and folders can then be added as necessary.
+The generated `kernel.bin` file must then be the first file placed within the floppy disk image `boot.img`, which can be done with a program such as PowerISO. Other files including file and programs may be added as necessary after this is complete.
 
 ## Commands Implemented
 
@@ -44,18 +34,29 @@ UI(286) has three example applications:
     - Space Bar to pause
     - C to change color of snake
     - Enter to exit the game and go back to the CLI
-- `TEXT.286` is a text editor \[COMING SOON\]
+- `TEXT.286` is an incredibly basic text editor to display and type text.
+    - Use the Enter key for a new line
+    - Control + S exits the software
+    - NOTE: This software is still in development; backspace, scrolling, and saving functionality does NOT work right now!
 - `DEMO.286` is a basic piece of software that demonstrates the sound and graphics capabilities of UI(286).
+
+## Known Issues
+
+- TEXT.286 is still in development; as said earlier, backspace, scrolling, and saving functionality does NOT work right now.
+- Trying to enter in an unknown command or an app causes UI(286) to crash.
+- (5.25" 360 KB Floppy Disk only) Cannot load apps properly; algorithm for loading sectors is different than on 1.2 MB and 1.44 MB disks.
 
 ## Credits
 
-This project would have not been possible without the sound advice given by OSDev.org https://wiki.osdev.org/Expanded_Main_Page
+This project would have not been possible without the sound advice given by OSDev.org @ https://wiki.osdev.org/Expanded_Main_Page.
 
 For an in-depth guide as to how different computer components work, the book *The Indispensable PC Hardware Book* by Hans-Peter Messmer is an extremely helpful resource. The edition used in UI(286) development is the 1994 edition.
 
+Closer to the end of Command Line Interface development, the book *Assembly Language for Intel-Based Computers* by Kip R. Irvine also turned out to be a good guide to use as an alternative to the previous reference (and provides a nice IBM PC ASCII character set in the back). Fifth Edition was used.
+
 Two good resources for navigating OpenWatcom's C Compiler and Linker can be found here:
-- OpenWatcom's C Documentation https://open-watcom.github.io/open-watcom-v2-wikidocs/clr.html
-- A guide to memory models in Watcom https://users.pja.edu.pl/~jms/qnx/help/watcom/compiler16/wmodels.html#16BitDataModels
+- OpenWatcom's C Documentation @ https://open-watcom.github.io/open-watcom-v2-wikidocs/clr.html
+- A guide to memory models in Watcom @ https://users.pja.edu.pl/~jms/qnx/help/watcom/compiler16/wmodels.html#16BitDataModels
 
 Special thanks to the following pieces of software for emulating and debugging UI(286):
 
@@ -63,5 +64,20 @@ Special thanks to the following pieces of software for emulating and debugging U
 - DOSBox-X @ https://dosbox-x.com/ for providing the debugging tools to solve issues
 - PowerISO @ https://www.poweriso.com/ for quick and easy access to manipulating the file system on virtual floppy disks
 
+## Inspirations
 
+I want to give a list of projects I saw online that inspired me to program older computers and UI(286); please give these people a look, as they have accomplished works that are nothing short of incredible!
+
+- 8088 Domination by Hornet/Trixter/Jim Leonard @ https://trixter.oldskool.org/2014/06/17/8088-domination/
+- 8088 MPH by Hornet/Trixter/Jim Leonard, CRTC, and Desire @ https://trixter.oldskool.org/2015/04/07/8088-mph-we-break-all-your-emulators/
+- osakaOS by pac-ac @ https://github.com/pac-ac/osakaOS
+- KolibriOS by the KolibriOS Project Team @ http://kolibrios.org/en/
+
+## Previews
+
+![Bootloader](screenshots/boot286.png)
+![Command Line](screenshots/cli286.png)
+![Demo Appication](screenshots/demo286.png)
+![Snake Application](screenshots/snake286.png)
+![Text Editor Application](screenshots/text286.png)
 
