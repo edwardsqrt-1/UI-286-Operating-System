@@ -45,7 +45,7 @@ UI(286) has three example applications:
     - C to change color of snake
     - Enter to exit the game and go back to the CLI
 - `TEXT.286` is a text editor \[COMING SOON\]
-- `DEMO.286` is a set of graphics designed to look cool; think screen-savers \[COMING SOON\]
+- `DEMO.286` is a basic piece of software that demonstrates the sound and graphics capabilities of UI(286).
 
 ## Credits
 
