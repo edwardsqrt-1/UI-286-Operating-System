@@ -65,6 +65,17 @@ void TM_ClearConsole(unsigned char attr) {
 
 }
 
+// Looks at what character value is set at a given location
+char TM_PeekChar(unsigned char x, unsigned char y) {
+
+    // Calculate offset
+    char __far * screen = (char __far *) 0xB8000000L; // ES = 0xB800; BX = 0x0
+    unsigned short off = (y * TM_WIDTH + x) * TM_BYTES_PER_PIXEL;
+    screen += off;
+    return *screen;
+
+}
+
 // Places a character in the video memory
 void TM_PutChar(char c, unsigned char x, unsigned char y, unsigned char attr) {
 

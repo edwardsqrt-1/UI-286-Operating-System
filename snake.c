@@ -68,7 +68,7 @@ void main() {
     snek.going = SNAKE_STOPPED;
 
     // Until the enter key is pressed, draw a snake on screen
-    while (c != 0x0D) {
+    while (c != 0x18) {
 
         // Get the current character from the keyboard if one exists
         c = GetChar();
