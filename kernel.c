@@ -27,11 +27,8 @@
 #include <file.h>
 
 // Parameters
-#define VERSION_NUMBER "0.15"
-#define DATA_SEGMENT 0x300
-#define FD_1440_KB 0xF0
-#define FD_1200_KB 0xF9
-#define FD_360_KB 0xFD
+#define UI_286_VERSION "0.50"
+#define UI_286_SHELL_VERSION "0.40"
 
 // Stub to tell the program to go to the main loop
 void main286();
@@ -85,7 +82,7 @@ void PrintHelp(unsigned char x, unsigned char y) {
     TM_PutStr("help", x, y, 0x3D);
     TM_PutStr("\xAF Displays this help message", x+8, y, 0x3F);
 
-    // Print 
+    // Print bottom bar
     ++y;
     TM_PutStr("----------------------------------------------------", x, y, 0x3B);
 }
@@ -93,24 +90,23 @@ void PrintHelp(unsigned char x, unsigned char y) {
 // Function to call an app
 void CallApp() {
 
-    
     // Initialize variables and the segment + offset of the program to load
     int i;
-    unsigned short seg = 0x1000;
-    unsigned short off = 0;
+    unsigned short seg = PROGRAM_LOAD_SEGMENT;
+    unsigned short off = PROGRAM_LOAD_OFFSET;
 
     // Create a function definition at that faraway address
     typedef void (__far * prog)(void);
     prog main = (prog) (void __far *) (((unsigned long)(seg) << 16) + (unsigned long)(off));
 
-    // Create backup of video memory at 0x5000
+    // Create backup of video memory at 0x6C60
     __asm {
         mov ax, 0xB800
         mov es, ax
-        mov di, 0x5000
+        mov di, 0x6C60
         xor si, si
     }
-    for (i = 0; i < 80*25*2; i++) {
+    for (i = 0; i < TM_WIDTH*TM_HEIGHT*TM_BYTES_PER_PIXEL; i++) {
         __asm {
             mov al, [es:si]
             mov [ds:di], al
@@ -124,18 +120,18 @@ void CallApp() {
 
     // Restore the data segment
     __asm {
-        mov ax, 0x300
+        mov ax, DATA_SEGMENT
         mov ds, ax
     }
 
-    // Restore video memory
+    // Restore video memory from backup
     __asm {
         mov ax, 0xB800
         mov es, ax
-        mov si, 0x5000
+        mov si, 0x6C60
         xor di, di
     }
-    for (i = 0; i < 80*25*2; i++) {
+    for (i = 0; i < TM_WIDTH*TM_HEIGHT*TM_BYTES_PER_PIXEL; i++) {
         __asm {
             mov al, [ds:si]
             mov [es:di], al
@@ -161,7 +157,7 @@ void PrintInfo(unsigned char x, unsigned char y, unsigned char sig, unsigned sho
     TM_PutStr(")", x+6, y, 0x3F);
     TM_PutStr("Operating System", x+8, y, 0x3F);
     TM_PutStr("v", x+25, y, 0x3F);
-    TM_PutStr(VERSION_NUMBER, x+26, y, 0x3C);
+    TM_PutStr(UI_286_VERSION, x+26, y, 0x3C);
 
     // Print the amount of memory in KB
     ++y;
@@ -198,14 +194,14 @@ void PrintInfo(unsigned char x, unsigned char y, unsigned char sig, unsigned sho
 void main286() {
 
     // Pre-declare variables
-    char* welcome = "Welcome to the UI(286) Operating System v0.15!";
-    char* note = "UI(286) Shell v0.3";
+    char* welcome = "Welcome to the UI(286) Operating System v0.50!";
+    char* note = "UI(286) Command Shell v0.40";
     char* prompt = "286sh @ ";
     char* unknown = "ERROR: Could not recognize command!";
-    char* keybuff = (char*) mem(0x7000);
-    char* namebuff = (char*) mem(0x7032);
-    short* memsize_loc = (short*) mem(0x7BFD);
-    char* disk_descriptor_loc = (char*) mem(0x7BFF);
+    char* keybuff = (char*) mem(0x1A00);
+    char* namebuff = (char*) mem(0x1A50);
+    short* memsize_loc = (short*) mem(0x1AFD);
+    char* disk_descriptor_loc = (char*) mem(0x1AFF);
     struct FATEntry* ent;
     unsigned char x = 9, y = 5;
     short res, i, j, k;
@@ -469,7 +465,7 @@ void main286() {
 
                     // Load entry
                     sectors = ent->size >> 9;
-                    res = ReadSector((ent->sector)+(SPF+3+ROOT_DIRS)*SPC - 2, 0x10000, sectors, 0);
+                    res = ReadSector((ent->sector)+(SPF+3+ROOT_DIRS)*SPC - 2, (PROGRAM_LOAD_SEGMENT * 16 + PROGRAM_LOAD_OFFSET) , sectors, 0);
                     if (res < 0) {
 
                         // Scroll down to the next line

@@ -16,7 +16,7 @@
 #include <disk.h>
 
 #undef DATA_SEGMENT
-#define DATA_SEGMENT 0x1500 // Data segment value 
+#define DATA_SEGMENT 0x0480 // Data segment value 
 
 // Entry point (do not modify, copy and paste this to the beginning of your program after your includes)
 void main();
@@ -38,10 +38,10 @@ void __far entrypoint() {
 // Main program code
 void main() {
 
-    // Initialize temporary variables
+    // Initialize temporary variables (place text buffer at address 0x10000)
     unsigned char x,y,i;
     char c;
-    char* document = (char*) 0x60;
+    char __far * document = (char __far *) 0x10000000L;
     unsigned short p = 0;
     unsigned short tmp;
 
@@ -67,7 +67,7 @@ void main() {
         TM_PutChar(0xB3, TM_WIDTH-1, y, 0x3E);
     }
 
-    // Go to where the text editing would begin
+    // Go to the beginning line of the text editor
     TM_SetCursor(1, 2);
     x = 1;
     y = 2;

@@ -22,7 +22,7 @@ void __far entrypoint() {
 
     // Set the data segment
     __asm {
-        mov ax, 0x1500
+        mov ax, 0x0400
         mov ds, ax
     }
 

@@ -6,7 +6,7 @@ for %%f in (src\*.c) do wcc -0 -s -zl -zld -zls -i.\include -fo.\obj\%%~nf.obj %
 
 rem Create kernel
 wpp -0 -s -zl -zld -zls -i.\include gui.cpp -dfloppy=%1
-wlink name '.\gui.286' output raw offset=0x0 format dos file 'gui.obj' file '.\obj\*.obj' order clname CODE offset=0x0 clname DATA offset=0x5000
+wlink name '.\gui.286' output raw offset=0x2000 format dos file 'gui.obj' file '.\obj\*.obj' order clname CODE offset=0x2000 clname DATA offset=0x4800
 
 rem Delete stray object files and create the disk image
 del *.obj

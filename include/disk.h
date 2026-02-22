@@ -1,6 +1,8 @@
 #ifndef DISK_H
 #define DISK_H
-#define DATA_SEGMENT 0x300 // Data segment value 
+#define DATA_SEGMENT 0x1B0 // Data segment value 
+#define PROGRAM_LOAD_SEGMENT 0x200 // Data segment value for program loading
+#define PROGRAM_LOAD_OFFSET 0x0
 #define mem(x) (x - DATA_SEGMENT*16) // Apply data offset to get the location in relation to the data segment
 #define ptr(x) ((unsigned short)x + DATA_SEGMENT*16) // Convert pointer into a memory address as an integer
 
@@ -24,6 +26,7 @@
 
 #else // Default is 5.25" 1.2 MB FDD
 
+// General disk information true for all:
 #define SPT 15
 #define HEADS 2
 #define MAX_ENTRIES 111
@@ -32,6 +35,11 @@
 #define SPC 1
 
 #endif
+
+// Floppy disk signatures
+#define FD_1440_KB 0xF0
+#define FD_1200_KB 0xF9
+#define FD_360_KB 0xFD
 
 // Function to load a sector from the disk (written as LBA); 0 = success and -1 = failure
 short ReadSector(unsigned short lba, unsigned long addr, unsigned char sectors, unsigned char drive);
