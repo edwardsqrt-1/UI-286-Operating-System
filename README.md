@@ -10,7 +10,7 @@ I have provided the instructions to create the disk image for UI(286) within the
 - `1200` for a 5.25" 1.2 MB Floppy Disk
 - `1440` for a 3.5" 1.44 MB Floppy Disk
 
-The generated `kernel.bin` file must then be the first file placed within the floppy disk image `boot.img`, which can be done with a program such as PowerISO. Other files including file and programs may be added as necessary after this is complete.
+The generated `kernel.bin` file must then be the first file placed within the floppy disk image `boot.img`, which can be done with a program such as UltraISO. Other files including file and programs may be added as necessary after `kernel.bin` is added.
 
 ## Commands Implemented
 
@@ -33,18 +33,25 @@ UI(286) has three example applications:
     - W, A, S, and D for keyboard controls
     - Space Bar to pause
     - C to change color of snake
-    - Enter to exit the game and go back to the CLI
+    - Control + X to exit the game and go back to the CLI
 - `TEXT.286` is an incredibly basic text editor to display and type text.
     - Use the Enter key for a new line
-    - Control + S exits the software
-    - NOTE: This software is still in development; backspace, scrolling, and saving functionality does NOT work right now!
+    - Control + X exits the software
+    - NOTE: This software is still in development; scrolling and saving functionality does NOT work right now!
 - `DEMO.286` is a basic piece of software that demonstrates the sound and graphics capabilities of UI(286).
+
+## The UI(286) Graphical User Interface
+This is still very much into development, but the UI(286) operating system is intended to have a Graphical User Interface rather than just a command line. As of now, `GUI.286` only displays a rainbow on the screen for 3 seconds before automatically exiting.
 
 ## Known Issues
 
-- TEXT.286 is still in development; as said earlier, backspace, scrolling, and saving functionality does NOT work right now.
-- Trying to enter in an unknown command or an app causes UI(286) to crash.
+- TEXT.286 is still in development; scrolling and saving functionality do NOT work right now.
+- Trying to enter in an unknown command or an app immediately after UI(286) boots up causes a crash.
 - (5.25" 360 KB Floppy Disk only) Cannot load apps properly; algorithm for loading sectors is different than on 1.2 MB and 1.44 MB disks.
+- GUI.286 is also still early in development; it does not do much at the moment aside from changing video mode.
+
+## Official Website
+An official website now exists, albeit it still in development! You can check it out at this link: http://www.eddiescomputinglab.us/ui286
 
 ## Credits
 
@@ -62,7 +69,7 @@ Special thanks to the following pieces of software for emulating and debugging U
 
 - 86Box @ https://86box.net/ for providing a close-to-authentic emulator for potential machines
 - DOSBox-X @ https://dosbox-x.com/ for providing the debugging tools to solve issues
-- PowerISO @ https://www.poweriso.com/ for quick and easy access to manipulating the file system on virtual floppy disks
+- Ultra ISO @ https://www.ultraiso.com/ for quick and easy access to manipulating the file system on virtual floppy disks
 
 ## Inspirations
 
