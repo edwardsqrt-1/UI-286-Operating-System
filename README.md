@@ -4,13 +4,13 @@ This is a simple operating system for some of the oldest PCs with 286 and 8088 p
 
 ## Installation Steps
 
-I have provided the instructions to create the disk image for UI(286) within the `make.bat` file. Windows users that have OpenWatcom and NASM installed and placed in their path may run this file to automatically generate a floppy disk image, HOWEVER make.bat must be supplied one of the three values for `floppy` in the format `.\make.bat <floppy>`:
+Users that desire to build UI(286) from scratch must have the OpenWatcom V2 and NASM software installed on their PC and placed in their path. This can be done by navigating to OpenWatcom's GitHub repository at https://github.com/open-watcom/open-watcom-v2, going to Releases, finding the latest build, and then downloading & installing the respective binary package on the system (note: On Debian 13, the latest version creates a segmentation fault while installing, you may have to use a 2025 or earlier version). After verifying that OpenWatcom V2 has been installed, there are two scripts for building the UI(286) disk image: `make.bat` for Windows, and `make.sh` for Linux; ensure these are marked as executable, and then run the appropriate one for your OS. A required argument must be supplied one of the three values for `floppy` in the format `.\make.bat <floppy>` or `./make.sh <floppy>`; failure to do so will cause a failure in compilation:
 
-- `360` for a 5.25" 360 KB Floppy Disk
+- `360` for a 5.25" 360 KB Floppy Disk (Limited Support)
 - `1200` for a 5.25" 1.2 MB Floppy Disk
 - `1440` for a 3.5" 1.44 MB Floppy Disk
 
-The generated `kernel.bin` file must then be the first file placed within the floppy disk image `boot.img`, which can be done with a program such as UltraISO. Other files including file and programs may be added as necessary after `kernel.bin` is added.
+Note: For Linux users, if the `udisks2` package is installed, the image will be automatically generated and be fully ready for use with PC emulation software. However, Windows users must copy the files manually, which can be done with a program such as UltraISO. It is strictly necessary at this time for the `kernel.bin` file to be the first file added to UI(286), and then other files including documents and programs may be added as necessary. Only then can it be ready for use.
 
 ## Commands Implemented
 
