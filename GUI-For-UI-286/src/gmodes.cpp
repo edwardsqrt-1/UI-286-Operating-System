@@ -1,4 +1,4 @@
-#include <graphics_modes.h>
+#include <gmodes.h>
 
 // Sets a particular graphics mode on the screen
 void SetGraphicsMode(unsigned char mode) {

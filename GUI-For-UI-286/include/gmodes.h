@@ -1,5 +1,5 @@
-#ifndef GRAPHICS_MODES_H
-#define GRAPHICS_MODES_H
+#ifndef GMODES_H
+#define GMODES_H
 
 // Defined graphics mode
 #define MODE_80x25x16 0x3
