@@ -19,6 +19,7 @@ void GM_PutPixel(unsigned short x, unsigned short y, unsigned char c) {
 // Blank out the entire screen with a background color
 void GM_BlankScreen(unsigned char bg) {
 
+    // Loop through every coordinate and set pixel
     unsigned short x, y;
     for (x = 0; x < WIDTH; x++) 
         for (y = 0; y < HEIGHT; y++) 
@@ -59,4 +60,11 @@ void GM_PutUInt(unsigned short num, unsigned short x, unsigned short y, unsigned
 // Print a string at the coordinates with the given foreground and background
 void GM_PutStr(char* str, unsigned short x, unsigned short y, unsigned char fg, unsigned char bg) {
 
+    unsigned short i;
+    for (i = 0; str[i] != 0; i++) {
+        if (str[i] >= ' ') {
+            GM_PutChar(str[i], x, y, fg, bg);
+            x += 8;
+        } else continue;
+    }
 }

@@ -4,8 +4,8 @@
  * Date Created: Sunday March 8th, 2026
  * 
  * Description: A Command Line Interface is not enough for the modern day; as such UI(286) has an
- * optional Graphical User Interface Shell that it can run. For now, this only displays some text
- * for 3 seconds, then exits. 
+ * optional Graphical User Interface Shell that it can run. For now, this only displays a character 
+ * map for 10 seconds, then exits. 
  * 
  * Developer's note: This is a subproject of UI(286); the header and source files that exist in the UI(286)
  * directory can and will be copied and pasted in the respective include and src directories (but must be renamed 
@@ -39,17 +39,32 @@ void guiroot() {
 
     // Initialize position and color indices to be 0
     unsigned int i = 0;
+    unsigned int y = 324;
+    unsigned int x = 280;
     unsigned char c;
     unsigned char color = 0;
 
     // Set the screen mode to be Mode 0x13 and point a buffer at memory
     SetGraphicsMode(MODE_640x480x16);
-    
-    // Print each implemented character to the screen (wait a second between each character)
+
+    // Add a title
     GM_BlankScreen(0x1);
-    for (c = ' '; c <= '?'; c++) {
-        delay(1000000);
-        GM_PutChar(c, 1+((c-' ')*8), 1, 0xA, 0x0);
+    GM_PutStr("286GUI TEST BUILD...", 240, 5, 0xA, 0x1);
+
+    // Print each implemented character to the screen
+    GM_PutStr("CHARACTER MAP:", 264, 300, 0xC, 0x1);
+    for (c = ' '; c <= 'Z'; c++) {
+        
+        // Go to new row
+        if (((c - ' ') & 0x7) == 0 && c != ' ') {
+            y += 10;
+            x = 280;
+        } else if (c != ' ') x += 8;
+
+        // Print character after a delay of 0.15 seconds
+        delay(150000);
+        GM_PutChar(c, x, y, 0xA, 0x0);
+
     }
 
     // Wait 10 seconds and reset to text mode
