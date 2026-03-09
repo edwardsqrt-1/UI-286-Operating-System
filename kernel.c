@@ -27,8 +27,8 @@
 #include <file.h>
 
 // Parameters
-#define UI_286_VERSION "0.50"
-#define UI_286_SHELL_VERSION "0.40"
+#define UI_286_VERSION "0.75"
+#define UI_286_SHELL_VERSION "0.50"
 
 // Stub to tell the program to go to the main loop
 void main286();
@@ -40,7 +40,7 @@ void GoToMain() {
 void UpdateClock() {
 
     // Temporarily use memory at 0x2160 (past the end of the data segment)
-    struct rtc_time* clock = (struct rtc_time*) mem(0x2160);
+    struct rtc_time* clock = (struct rtc_time*) mem(0x2260);
 
     // Get the clock value
     gettime(clock);
@@ -233,14 +233,14 @@ void PrintInfo(unsigned char x, unsigned char y, unsigned char sig, unsigned sho
 void main286() {
 
     // Pre-declare variables
-    char* welcome = "Welcome to the UI(286) Operating System v0.50!";
-    char* note = "UI(286) Command Shell v0.40";
+    char* welcome = "Welcome to the UI(286) Operating System v0.75!";
+    char* note = "UI(286) Command Shell v0.50";
     char* prompt = "286sh @ ";
     char* unknown = "ERROR: Could not recognize command!";
-    char* keybuff = (char*) mem(0x1C00);
-    char* namebuff = (char*) mem(0x1C50);
-    short* memsize_loc = (short*) mem(0x1CFD);
-    char* disk_descriptor_loc = (char*) mem(0x1CFF);
+    char* keybuff = (char*) mem(0x1D00);
+    char* namebuff = (char*) mem(0x1D50);
+    short* memsize_loc = (short*) mem(0x1DFD);
+    char* disk_descriptor_loc = (char*) mem(0x1DFF);
     struct FATEntry* ent;
     unsigned char x = 9, y = 5;
     short res, i, j, k;
@@ -278,17 +278,18 @@ void main286() {
         for (i = 0; i < 50; i++) {
 
             // Get the current character (update clock while doing so)
-            while (keybuff[i] == 0) {
-                keybuff[i] = GetChar();
+            c = 0;
+            while (c == 0) {
+                c = GetChar();
                 UpdateClock();
                 TM_SetCursor(x, y);
-            }
+            }        
 
             // Execute on carriage return (enter pressed)
-            if (keybuff[i] == 0xD) break;
+            if (c == 0xD) break;
 
             // Delete last character
-            if (keybuff[i] == 0x8) {
+            if (c == 0x8) {
 
                 if (i > 0) { // Proceed with deleting last character if one exists
 
@@ -311,6 +312,7 @@ void main286() {
             }
 
             // Show character on screen and increment the value of x
+            keybuff[i] = c;
             TM_PutChar(keybuff[i], x, y, 0x39);
             x++;
 

@@ -108,6 +108,20 @@ void TM_PutUIntB(unsigned short num, unsigned short base, unsigned char x, unsig
     unsigned short res;
     unsigned char count = 0;
 
+    // Make a special exception for 0; algorithm only works on non-zero integers (print 0 directly)
+    if (num == 0) {
+        __asm {
+            mov ax, 0xB800
+            mov es, ax
+            mov di, off
+            mov al, '0'
+            mov [es:di], al
+            mov al, attr
+            mov [es:di+1], al
+        }
+        return;
+    }
+
     // Keep dividing number and pushing to the stack until the number reaches 0
     while (num != 0) {
 

@@ -5,7 +5,7 @@ for %%f in (src\*.c) do wcc -0 -s -zl -zld -zls -i.\include -fo.\obj\%%~nf.obj %
 
 rem Create kernel
 wcc -0 -s -zl -zld -zls -i.\include kernel.c -dfloppy=%1
-wlink name '.\kernel.bin' output raw offset=0x700 format dos file 'kernel.obj' file '.\obj\*.obj' order clname CODE offset=0x700 clname DATA offset=0x1D00
+wlink name '.\kernel.bin' output raw offset=0x700 format dos file 'kernel.obj' file '.\obj\*.obj' order clname CODE offset=0x700 clname DATA offset=0x1E00
 
 rem Create snake game
 wcc -0 -s -zl -zld -zls -i.\include -fosnake.obj snake.c -dfloppy=%1

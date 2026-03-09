@@ -1,6 +1,6 @@
 #ifndef DISK_H
 #define DISK_H
-#define DATA_SEGMENT 0x1D0 // Data segment value 
+#define DATA_SEGMENT 0x1E0 // Data segment value 
 #define PROGRAM_LOAD_SEGMENT 0x230 // Data segment value for program loading
 #define PROGRAM_LOAD_OFFSET 0x0
 #define mem(x) (x - DATA_SEGMENT*16) // Apply data offset to get the location in relation to the data segment
