@@ -36,6 +36,45 @@ void GoToMain() {
     main286();
 }
 
+// Helper function to update the clock (it must always keep track of time)
+void UpdateClock() {
+
+    // Temporarily use memory at 0x2160 (past the end of the data segment)
+    struct rtc_time* clock = (struct rtc_time*) mem(0x2160);
+
+    // Get the clock value
+    gettime(clock);
+
+    /* Print the time in the format hh:mm */
+    // Get Hour
+    if (clock->hour < 10) {
+        TM_PutUInt(0,73,TM_HEIGHT-1,0x2F);
+        TM_PutUInt(clock->hour,74,TM_HEIGHT-1,0x2F);
+    } else TM_PutUInt(clock->hour,73,TM_HEIGHT-1,0x2F);
+
+    // Seperate with a colon
+    TM_PutChar(':', 75, TM_HEIGHT-1, 0x2F);
+
+    // Get Minute
+    if (clock->minute < 10) {
+        TM_PutUInt(0,76,TM_HEIGHT-1,0x2F);
+        TM_PutUInt(clock->minute,77,TM_HEIGHT-1,0x2F);
+    } else TM_PutUInt(clock->minute,76,TM_HEIGHT-1,0x2F);
+
+    /* Print the time in the format MM/DD */
+    // Get Month
+    if (clock->month < 10) {
+        TM_PutUInt(0,2,TM_HEIGHT-1,0x2F);
+        TM_PutUInt(clock->month,3,TM_HEIGHT-1,0x2F);
+    } else TM_PutUInt(clock->month,2,TM_HEIGHT-1,0x2F);
+    TM_PutChar('/', 4, TM_HEIGHT-1, 0x2F);
+    if (clock->day < 10) {
+        TM_PutUInt(0,5,TM_HEIGHT-1,0x2F);
+        TM_PutUInt(clock->day,6,TM_HEIGHT-1,0x2F);
+    } else TM_PutUInt(clock->day,5,TM_HEIGHT-1,0x2F);
+
+}
+
 // Prints out a list of commands and explains what they do
 void PrintHelp(unsigned char x, unsigned char y) {
  
@@ -198,10 +237,10 @@ void main286() {
     char* note = "UI(286) Command Shell v0.40";
     char* prompt = "286sh @ ";
     char* unknown = "ERROR: Could not recognize command!";
-    char* keybuff = (char*) mem(0x1A00);
-    char* namebuff = (char*) mem(0x1A50);
-    short* memsize_loc = (short*) mem(0x1AFD);
-    char* disk_descriptor_loc = (char*) mem(0x1AFF);
+    char* keybuff = (char*) mem(0x1C00);
+    char* namebuff = (char*) mem(0x1C50);
+    short* memsize_loc = (short*) mem(0x1CFD);
+    char* disk_descriptor_loc = (char*) mem(0x1CFF);
     struct FATEntry* ent;
     unsigned char x = 9, y = 5;
     short res, i, j, k;
@@ -226,6 +265,7 @@ void main286() {
     TM_PutStr(welcome, 1, 2, 0x3F);
     TM_PutStr(note, 1, 3, 0x39);
     TM_PutStr(prompt, 1, 5, 0x3F);
+    UpdateClock();
     
     // Command line
     while (1) {
@@ -237,8 +277,12 @@ void main286() {
         // Get keyboard input for 50 characters and echo; "execute" on enter
         for (i = 0; i < 50; i++) {
 
-            // Get the current character
-            keybuff[i] = GetChar_H();
+            // Get the current character (update clock while doing so)
+            while (keybuff[i] == 0) {
+                keybuff[i] = GetChar();
+                UpdateClock();
+                TM_SetCursor(x, y);
+            }
 
             // Execute on carriage return (enter pressed)
             if (keybuff[i] == 0xD) break;
@@ -480,6 +524,9 @@ void main286() {
 
                     // Otherwise, it is ready for the program to load
                     } else CallApp();
+
+                    // Ensure clock is updated after the program returns back to UI(286), then go to preparations for the CLI
+                    UpdateClock();
                     break;
 
                 } else { // Entry does not exist
@@ -508,6 +555,8 @@ void main286() {
             ScrollConsoleDown(0x30);
             y = TM_HEIGHT - 2;
         }
+
+        UpdateClock();
 
         // Place prompt again
         TM_PutStr(prompt, 1, y, 0x3F);
