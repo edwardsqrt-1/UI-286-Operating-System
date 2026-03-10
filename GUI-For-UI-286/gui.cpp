@@ -1,10 +1,10 @@
 /*
  * Program: GUI for the UI(286) Operating System
  * Author: Edward Bierens
- * Date Created: Monday March 9th, 2026
+ * Date Created: Tuesday March 10th, 2026
  * 
  * Description: A Command Line Interface is not enough for the modern day; as such UI(286) has an
- * optional Graphical User Interface Shell that it can run. For now, this only displays a character 
+ * optional Graphical User Interface Shell that it can run. For now, this displays a demo screen with a character 
  * map for 10 seconds, then exits. 
  * 
  * Developer's note: This is a subproject of UI(286); the header and source files that exist in the UI(286)
@@ -48,7 +48,7 @@ void guiroot() {
     // Set the screen mode to be Mode 0x13 and point a buffer at memory
     SetGraphicsMode(MODE_640x480x16);
 
-    // Add a gradient and title
+    // Add a cool gradient at the top
     GM_BlankScreen(0x1);
     for (y = 0; y < 100; y++) {
         for (x = 0; x < 640; x++) {
@@ -56,43 +56,69 @@ void guiroot() {
             else if ((x + 25) % ((y - 7) / 5) == 0) GM_PutPixel(x, y, 0x5);
         }
     }
-    y = 324;
-    x = 280;
+
+    // Set title on the top of screen
     GM_PutStr("286GUI TEST BUILD...", 240, 4, 0xF, 255);
     
-    // Test numbers
+    // Test number printing out
     for (int i = 0; i*3 < 100; i++) {
         GM_PutUInt(i*3, 100 + (i % 3) * 200, 120 + i * 3, 0xB, 255);
     }
 
     // Test time
-    GM_PutStr("THE PROGRAM WAS LOADED AT:", 180, 250, 0xE, 0x1);
     gettime(clock);
+    GM_PutStr("Time the program was loaded at:", 150, 250, 0xE, 0x1);
 
-    /* Print the time in the format hh:mm */
-    // Get Hour
+    /* Display the time the program was loaded */
+    // Print hour
     if (clock->hour < 10) {
-        GM_PutUInt(0, 400, 250, 0xF, 0x1);
-        GM_PutUInt(clock->hour, 408, 250, 0xF, 0x1);
-    } else GM_PutUInt(clock->hour, 400, 250, 0xF, 0x1);
+        GM_PutUInt(0, 408, 250, 0xF, 0x1);
+        GM_PutUInt(clock->hour, 416, 250, 0xF, 0x1);
+    } else GM_PutUInt(clock->hour, 408, 250, 0xF, 0x1);
 
-    // Seperate with a colon
-    GM_PutChar(':', 416, 250, 0xF, 0x1);
+    // Print the colon seperating hour and minute
+    GM_PutChar(':', 424, 250, 0xF, 0x1);
 
-    // Get Minute
+    // Print the minute
     if (clock->minute < 10) {
-        GM_PutUInt(0, 424, 250, 0xF, 0x1);
-        GM_PutUInt(clock->minute, 432, 250, 0xF, 0x1);
-    } else GM_PutUInt(clock->minute, 424, 250, 0xF, 0x1);
+        GM_PutUInt(0, 432, 250, 0xF, 0x1);
+        GM_PutUInt(clock->minute, 440, 250, 0xF, 0x1);
+    } else GM_PutUInt(clock->minute, 432, 250, 0xF, 0x1);
+
+    // Test date
+    GM_PutStr("Day the program was loaded at:", 150, 260, 0xE, 0x1);
+
+    /* Display the day the program was loaded */
+    // Print month
+    if (clock->month < 10) {
+        GM_PutUInt(0, 400, 260, 0xF, 0x1);
+        GM_PutUInt(clock->month, 408, 260, 0xF, 0x1);
+    } else GM_PutUInt(clock->month, 400, 260, 0xF, 0x1);
+
+    // Print the slash seperating month and day
+    GM_PutChar('/', 416, 260, 0xF, 0x1);
+
+    // Print the minute
+    if (clock->day < 10) {
+        GM_PutUInt(0, 424, 260, 0xF, 0x1);
+        GM_PutUInt(clock->day, 432, 260, 0xF, 0x1);
+    } else GM_PutUInt(clock->day, 424, 260, 0xF, 0x1);
+
+    // Holiday easter eggs (pun not intended) :-)
+    if (clock->month == 3 && clock->day == 14) GM_PutStr("Happy PI Day!", 150, 276, 0xE, 0x1);
+    if (clock->month == 12 && clock->day == 25) GM_PutStr("Merry Christmas!", 150, 276, 0xA, 0x1);
+    if (clock->month == 2 && clock->day == 14) GM_PutStr("Made with love!", 150, 276, 0xD, 0x1); 
 
     // Print each implemented character to the screen
-    GM_PutStr("CHARACTER MAP:", 264, 300, 0xC, 0x1);
-    for (c = ' '; c <= 'Z'; c++) {
+    y = 324;
+    x = 240;
+    GM_PutStr("CHARACTER MAP:", 248, 300, 0xC, 0x1);
+    for (c = ' '; c <= '~'; c++) {
         
         // Go to new row
-        if (((c - ' ') & 0x7) == 0 && c != ' ') {
+        if (((c - ' ') & 0xF) == 0 && c != ' ') {
             y += 10;
-            x = 280;
+            x = 240;
         } else if (c != ' ') x += 8;
 
         // Print character after a delay of 0.15 seconds
