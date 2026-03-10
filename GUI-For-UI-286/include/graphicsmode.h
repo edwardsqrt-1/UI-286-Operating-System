@@ -8,7 +8,7 @@
 #define TM_BYTES_PER_PIXEL 2
 
 // Procedure to place a pixel on the screen
-void GM_PutPixel(unsigned char x, unsigned char y, unsigned char fg, unsigned char bg);
+void GM_PutPixel(unsigned short x, unsigned short y, unsigned char c);
 
 // Blank out the screen to a specific color
 void GM_BlankScreen(unsigned char bg);

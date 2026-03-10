@@ -1,7 +1,7 @@
 /*
  * Program: GUI for the UI(286) Operating System
  * Author: Edward Bierens
- * Date Created: Sunday March 8th, 2026
+ * Date Created: Monday March 9th, 2026
  * 
  * Description: A Command Line Interface is not enough for the modern day; as such UI(286) has an
  * optional Graphical User Interface Shell that it can run. For now, this only displays a character 
@@ -43,13 +43,47 @@ void guiroot() {
     unsigned int x = 280;
     unsigned char c;
     unsigned char color = 0;
+    struct rtc_time __far* clock = (struct rtc_time __far *) 0x10000000L; // At address 0x10000
 
     // Set the screen mode to be Mode 0x13 and point a buffer at memory
     SetGraphicsMode(MODE_640x480x16);
 
-    // Add a title
+    // Add a gradient and title
     GM_BlankScreen(0x1);
-    GM_PutStr("286GUI TEST BUILD...", 240, 5, 0xA, 0x1);
+    for (y = 0; y < 100; y++) {
+        for (x = 0; x < 640; x++) {
+            if (y < 12) GM_PutPixel(x, y, 0x5);
+            else if ((x + 25) % ((y - 7) / 5) == 0) GM_PutPixel(x, y, 0x5);
+        }
+    }
+    y = 324;
+    x = 280;
+    GM_PutStr("286GUI TEST BUILD...", 240, 4, 0xF, 255);
+    
+    // Test numbers
+    for (int i = 0; i*3 < 100; i++) {
+        GM_PutUInt(i*3, 100 + (i % 3) * 200, 120 + i * 3, 0xB, 255);
+    }
+
+    // Test time
+    GM_PutStr("THE PROGRAM WAS LOADED AT:", 180, 250, 0xE, 0x1);
+    gettime(clock);
+
+    /* Print the time in the format hh:mm */
+    // Get Hour
+    if (clock->hour < 10) {
+        GM_PutUInt(0, 400, 250, 0xF, 0x1);
+        GM_PutUInt(clock->hour, 408, 250, 0xF, 0x1);
+    } else GM_PutUInt(clock->hour, 400, 250, 0xF, 0x1);
+
+    // Seperate with a colon
+    GM_PutChar(':', 416, 250, 0xF, 0x1);
+
+    // Get Minute
+    if (clock->minute < 10) {
+        GM_PutUInt(0, 424, 250, 0xF, 0x1);
+        GM_PutUInt(clock->minute, 432, 250, 0xF, 0x1);
+    } else GM_PutUInt(clock->minute, 424, 250, 0xF, 0x1);
 
     // Print each implemented character to the screen
     GM_PutStr("CHARACTER MAP:", 264, 300, 0xC, 0x1);
