@@ -16,6 +16,8 @@
 #include <gmodes.h>
 #include <graphicsmode.h>
 #include <time.h>
+#include <panel.h>
+#include <string.h>
 
 // Entry point (do not modify, copy and paste this to the beginning of your program after your includes)
 void guiroot();
@@ -45,6 +47,9 @@ void guiroot() {
     unsigned char color = 0;
     struct rtc_time __far* clock = (struct rtc_time __far *) 0x10000000L; // At address 0x10000
 
+    // Initialize Panel
+    Panel p(28);
+
     // Set the screen mode to be Mode 0x13 and point a buffer at memory
     SetGraphicsMode(MODE_640x480x16);
 
@@ -66,7 +71,7 @@ void guiroot() {
     }
 
     // Test time
-    gettime(clock);
+    GetTime(clock);
     GM_PutStr("Time the program was loaded at:", 150, 250, 0xE, 0x1);
 
     /* Display the time the program was loaded */
@@ -122,13 +127,25 @@ void guiroot() {
         } else if (c != ' ') x += 8;
 
         // Print character after a delay of 0.15 seconds
-        delay(150000);
+        Delay(1000);
         GM_PutChar(c, x, y, 0xA, 0x0);
 
     }
 
-    // Wait 10 seconds and reset to text mode
-    delay(10000000);
+    // Draw Panel
+    p.Draw();
+
+    // Add a message to exit the interface
+    GM_PutStr("Press Ctrl + X to exit this demo...", 2, 438, 0xA, 0x1); 
+
+
+    // Wait for the Control + X key stroke, and then go back to the CLI
+    c = 0;
+    while (c != 0x18) {
+        c = GetChar();
+        GetTime(clock);
+        p.UpdateClock();
+    }
     ResetGraphicsMode();
 
 }

@@ -10,6 +10,12 @@
 // Procedure to place a pixel on the screen
 void GM_PutPixel(unsigned short x, unsigned short y, unsigned char c);
 
+// Procedure to put a line on the screen
+void GM_PutLine(unsigned short x_1, unsigned short y_1, unsigned short x_2, unsigned short y_2, unsigned char c);
+
+// Procedure to put a rectangle on the screen
+void GM_PutRect(unsigned short x, unsigned short y, unsigned short w, unsigned short h, unsigned char fill_color, unsigned char border_color);
+
 // Blank out the screen to a specific color
 void GM_BlankScreen(unsigned char bg);
 

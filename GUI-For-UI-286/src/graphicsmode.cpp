@@ -15,6 +15,26 @@ void GM_PutPixel(unsigned short x, unsigned short y, unsigned char c) {
 
 }
 
+// Displays a line on the screen
+void GM_PutLine(unsigned short x_1, unsigned short y_1, unsigned short x_2, unsigned short y_2, unsigned char c) {
+
+    unsigned char rise = y_2 - y_1;
+    unsigned char run = x_2 - x_1;
+
+
+}
+
+// Displays a rectangle on the screen
+void GM_PutRect(unsigned short x, unsigned short y, unsigned short w, unsigned short h, unsigned char fill_color, unsigned char border_color) {
+
+    for (unsigned int x_i = x; x_i < x + w; x_i++) {
+        for (unsigned int y_i = y; y_i < y + h; y_i++) {
+            if (y_i == y || y_i == y + h - 1 || x_i == x || x_i == x + w - 1) GM_PutPixel(x_i, y_i, border_color);
+            else GM_PutPixel(x_i, y_i, fill_color);
+        }
+    }
+}
+
 // Blank out the entire screen with a background color
 void GM_BlankScreen(unsigned char bg) {
 

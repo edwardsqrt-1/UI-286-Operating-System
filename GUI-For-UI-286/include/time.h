@@ -12,9 +12,9 @@ struct rtc_time {
 };
 
 // Procedure to provide delay functionality
-void delay(unsigned long u_sec);
+void Delay(unsigned long u_sec);
 
 // Function to get the current time
-void gettime(struct rtc_time __far* current_time);
+void GetTime(struct rtc_time __far* current_time);
 
 #endif

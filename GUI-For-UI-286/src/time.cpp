@@ -1,7 +1,7 @@
 #include <time.h>
 
 // Defining the function to delay by a given amount of milliseconds
-void delay(unsigned long u_sec) {
+void Delay(unsigned long u_sec) {
     
     // Split into higher 16 bits and lower 16 bits
     unsigned short h_u_sec = u_sec >> 16;
@@ -17,7 +17,7 @@ void delay(unsigned long u_sec) {
 }
 
 // Getting the time directly from the Real Time Clock on the PC
-void gettime(struct rtc_time __far* time_struct) {
+void GetTime(struct rtc_time __far* time_struct) {
 
     // Get a temporary character value
     unsigned char temp = 0x80;
