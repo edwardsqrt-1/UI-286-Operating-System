@@ -46,9 +46,8 @@ This is still very much into development, but the UI(286) operating system is in
 ## Known Issues
 
 - TEXT.286 is still in development; scrolling and saving functionality do NOT work right now.
-- Trying to enter in an unknown command or an app immediately after UI(286) boots up causes a crash.
 - (5.25" 360 KB Floppy Disk only) Cannot load apps properly; algorithm for loading sectors is different than on 1.2 MB and 1.44 MB disks.
-- GUI.286 is also still early in development; it does not do much at the moment aside from changing video mode.
+- GUI.286 is also still early in development; it does not do much at the moment aside from demoing various GUI elements.
 
 ## Official Website
 An official website now exists, albeit it still in development! You can check it out at this link: http://www.eddiescomputinglab.us/ui286

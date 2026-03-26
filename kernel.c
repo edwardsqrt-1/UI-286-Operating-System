@@ -237,10 +237,12 @@ void main286() {
     char* note = "UI(286) Command Shell v0.50";
     char* prompt = "286sh @ ";
     char* unknown = "ERROR: Could not recognize command!";
-    char* keybuff = (char*) mem(0x1D00);
-    char* namebuff = (char*) mem(0x1D50);
-    short* memsize_loc = (short*) mem(0x1DFD);
-    char* disk_descriptor_loc = (char*) mem(0x1DFF);
+    char* keybuff = (char*) mem(0x2270);
+    char* namebuff = (char*) mem(0x22D0);
+    short* memsize_loc = (short*) mem(0x22FD);
+    char* disk_descriptor_loc = (char*) mem(0x22FF);
+
+    // Temporary variables
     struct FATEntry* ent;
     unsigned char x = 9, y = 5;
     short res, i, j, k;
@@ -382,6 +384,7 @@ void main286() {
                     
                     // Print determination whether this is a file or a directory (located in attribute byte)
                     if ((ent->attr & 0x10) != 0) TM_PutStr("[D]", 1, y, 0x3E);
+                    else if (ent->extension[0] == '2' && ent->extension[1] == '8' && ent->extension[2] == '6') TM_PutStr("[A]", 1, y, 0x3A);
                     else TM_PutStr("[F]", 1, y, 0x3F);
                     x = 5;
 
@@ -399,7 +402,7 @@ void main286() {
                         for (i = 0; i < 8 && ent->name[i] != ' '; i++) keybuff[i] = ent->name[i];
                         keybuff[i] = '.';
                         ++i;
-                        for (j = 0; j < 3; j++) keybuff[i+j] = ent->extension[j];
+                        for (j = 0; j < 3 && ent->extension[j] != ' '; j++) keybuff[i+j] = ent->extension[j];
                         keybuff[i+j] = 0;
                         TM_PutStr(keybuff, x, y, 0x3F);
 
@@ -501,6 +504,18 @@ void main286() {
                 break;
                 
             default: // Unknown 
+
+                res = ReadSector(SPF+3, 0x7C00, (MAX_ENTRIES*0x40) / 512, 0);
+                if (res < 0) {
+                    ++y;
+                    if (y >= TM_HEIGHT - 1) {
+                        ScrollConsoleDown(0x30);
+                        y = TM_HEIGHT - 2;
+                    }
+                    TM_PutStr("Disk failed to load, is it inserted?", 1, y, 0x34);
+                    UpdateClock();
+                    break;
+                }
             
                 // Look for executable
                 StrCat(keybuff, ".286");
