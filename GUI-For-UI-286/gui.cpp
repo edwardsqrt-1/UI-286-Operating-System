@@ -50,7 +50,27 @@ void guiroot() {
     // Initialize Panel
     Panel p(28);
 
-    // Set the screen mode to be Mode 0x13 and point a buffer at memory
+    // Test widget 0 on the left
+    PanelWidget widget0(0, 150, p.Height());
+    widget0.SetColor(0x7);
+    p.AddWidget(&widget0);
+
+    // Test widget 1 on the 3rd furthest from the right
+    PanelWidget widget1(440, 50, p.Height());
+    widget1.SetColor(0x4);
+    p.AddWidget(&widget1);
+
+    // Test widget 2 on the 2nd furthest from the right
+    PanelWidget widget2(490, 50, p.Height());
+    widget2.SetColor(0x5);
+    p.AddWidget(&widget2);
+
+    // Test widget 3 on the right side of the panel
+    PanelWidget widget3(540, 100, p.Height());
+    widget3.SetColor(0x3);
+    p.AddWidget(&widget3);
+
+    // Set the screen mode to be Mode 0x12 and point a buffer at memory
     SetGraphicsMode(MODE_640x480x16);
 
     // Add a cool gradient at the top
@@ -132,7 +152,7 @@ void guiroot() {
 
     }
 
-    // Draw Panel
+    // Draw panel and widgets
     p.Draw();
 
     // Add a message to exit the interface
@@ -143,8 +163,8 @@ void guiroot() {
     c = 0;
     while (c != 0x18) {
         c = GetChar();
-        GetTime(clock);
-        p.UpdateClock();
+        //GetTime(clock);
+        //p.UpdateClock();
     }
     ResetGraphicsMode();
 
