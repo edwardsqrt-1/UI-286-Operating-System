@@ -5,6 +5,7 @@
 #include <widget.h>
 #define MAX_WIDGETS 10
 
+// Base class for a panel widget
 class PanelWidget : public Widget {
 
     protected:
@@ -15,9 +16,34 @@ class PanelWidget : public Widget {
         PanelWidget(unsigned short start, unsigned short len, unsigned short panel_height);    // Initialize panel widget
         void SetColor(unsigned char c);     // Set widget background color
         void SetBorder(unsigned char c);    // Set border color of widget
-        void Draw() {
-            GM_PutRect(estate.x, estate.y, estate.w, estate.h, fill_color, border_color);   // Draw the panel widget on the screen
+        void Draw();                        // Draw widget on the screen
+};
+
+// Panel clock widget that tells you the time
+class PanelClockWidget : public PanelWidget {
+
+    private:
+        struct rtc_time val;    // Time structure
+
+    public:
+
+        // Use base constructor of the PanelWidget class
+        PanelClockWidget(unsigned short start, unsigned short len, unsigned short panel_height) : PanelWidget(start, len, panel_height) {
+            GetTime(&val);
         }
+        void UpdateTime();  // Update time value and print it on screen
+    
+};
+
+// Panel Widget that is meant to perform an action when clicked
+class PanelActionWidget : public PanelWidget {
+
+    private:
+        typedef void (* action)(void); // Pointer type declaration to a void function with no arguments
+
+    public:
+        action OnClick; // The actual pointer to said function
+
 
 };
 

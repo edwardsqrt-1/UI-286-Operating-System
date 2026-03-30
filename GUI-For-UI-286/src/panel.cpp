@@ -12,6 +12,14 @@ void PanelWidget::SetBorder(unsigned char c) {
     border_color = c;
 }
 
+// Draw the panel widget
+void PanelWidget::Draw() {
+    GM_PutRect(estate.x, estate.y, estate.w, estate.h, fill_color, border_color);   // Draw the panel widget on the screen
+    if (icon != 0) {
+        // Future icon rendering code
+    }
+}
+
 // Construct the panel widget
 PanelWidget::PanelWidget(unsigned short start, unsigned short len, unsigned short panel_height) {
     
@@ -24,6 +32,35 @@ PanelWidget::PanelWidget(unsigned short start, unsigned short len, unsigned shor
     // Set colors
     fill_color = 0x1;
     border_color = 0xF;
+
+}
+
+/* PANEL CLOCK FUNCTIONS */
+
+// Update the clock and draw the new time
+void PanelClockWidget::UpdateTime() {
+
+    // Calculate the midpoint of the height of the panel
+    unsigned short y = estate.y + estate.h / 2 - 5;
+    unsigned short x = estate.x + estate.w / 2 - 20;
+
+    // Store clock information at the memory address 0x10000
+    GetTime(&val);
+
+    // Print hour
+    if (val.hour < 10) {
+        GM_PutUInt(0, x, y, 0xF, fill_color);
+        GM_PutUInt(val.hour, x+8, y, 0xF, fill_color);
+    } else GM_PutUInt(val.hour, x, y, 0xF, fill_color);
+
+    // Print the colon seperating hour and minute
+    GM_PutChar(':', x+16, y, 0xF, fill_color);
+
+    // Print the minute
+    if (val.minute < 10) {
+        GM_PutUInt(0, x+24, y, 0xF, fill_color);
+        GM_PutUInt(val.minute, x+32, y, 0xF, fill_color);
+    } else GM_PutUInt(val.minute, x+24, y, 0xF, fill_color);
 
 }
 
@@ -75,29 +112,3 @@ void Panel::Draw() {
     for (unsigned int i = 0; i < widget_count; i++) widgets[i]->Draw();
 
 }
-
-// Update the clock on the panel. In the future, this will be a separate widget
-/*void Panel::UpdateClock() {
-
-    // Calculate the midpoint of the height of the panel
-    unsigned short mid = 480 - (panel_height / 2 + 4);
-
-    // Store clock information at the memory address 0x10000
-    struct rtc_time __far* clock = (struct rtc_time __far *) 0x10000000L;
-    GetTime(clock);
-
-    // Print hour
-    if (clock->hour < 10) {
-        GM_PutUInt(0, 584, mid, 0xF, aux_fill_color);
-        GM_PutUInt(clock->hour, 592, mid, 0xF, aux_fill_color);
-    } else GM_PutUInt(clock->hour, 584, mid, 0xF, aux_fill_color);
-
-    // Print the colon seperating hour and minute
-    GM_PutChar(':', 600, mid, 0xF, aux_fill_color);
-
-    // Print the minute
-    if (clock->minute < 10) {
-        GM_PutUInt(0, 608, mid, 0xF, aux_fill_color);
-        GM_PutUInt(clock->minute, 616, mid, 0xF, aux_fill_color);
-    } else GM_PutUInt(clock->minute, 608, mid, 0xF, aux_fill_color);
-}*/
