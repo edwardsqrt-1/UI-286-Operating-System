@@ -18,6 +18,7 @@
 #include <time.h>
 #include <panel.h>
 #include <string.h>
+#include <mouse.h>
 
 // Entry point (do not modify, copy and paste this to the beginning of your program after your includes)
 void guiroot();
@@ -43,7 +44,7 @@ void guiroot() {
     unsigned int i = 0;
     unsigned int y = 324;
     unsigned int x = 280;
-    unsigned char c;
+    unsigned char c, m;
     unsigned char color = 0;
     struct rtc_time __far* clock = (struct rtc_time __far *) 0x10000000L; // At address 0x10000
 
@@ -155,15 +156,42 @@ void guiroot() {
     // Draw panel and widgets
     p.Draw();
 
+    // Create a mouse info box and structure
+    struct MouseInfo __far* mouse = (struct MouseInfo __far *) 0x10000000L; // Also at address 0x10000 (the clock is not used here anymore)
+    mouse->x = 320;
+    mouse->y = 240;
+    mouse->left_clicked = 0;
+    mouse->right_clicked = 0;
+
+    // Initialize the mouse and create a box for it
+    mouse->type = PS2_MouseInit();
+    GM_PutUInt(mouse->type, 2, 428, 0xA, 0x1);
+    GM_PutRect(450, 300, 80, 80, 0x2, 0xF);
+    GM_PutStr("X:", 452, 302, 0xF, 0x2);
+    GM_PutStr("Y:", 452, 322, 0xF, 0x2);
+    GM_PutStr("LB:", 452, 342, 0xF, 0x2);
+    GM_PutStr("RB:", 452, 362, 0xF, 0x2);
+
     // Add a message to exit the interface
     GM_PutStr("Press Ctrl + X to exit this demo...", 2, 438, 0xA, 0x1); 
-
 
     // Wait for the Control + X key stroke, and then go back to the CLI
     c = 0;
     while (c != 0x18) {
+
+        // Get character if one exists in the buffer and get time
         c = GetChar();
         panel_clock.UpdateTime();
+
+        // Poll mouse
+        m = PS2_MousePoll(mouse);
+        GM_PutUInt(m, 0, 0, 0xC, 0x4);
+
+        // Update mouse coordinates
+        GM_PutUInt(mouse->x, 470, 302, 0xF, 0x2);
+        GM_PutUInt(mouse->y, 470, 322, 0xF, 0x2);
+        GM_PutUInt(mouse->left_clicked, 478, 342, 0xF, 0x2);
+        GM_PutUInt(mouse->right_clicked, 478, 362, 0xF, 0x2);
     }
     ResetGraphicsMode();
 
