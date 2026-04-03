@@ -8,7 +8,7 @@
 
 // Structure to contain mouse information
 struct MouseInfo {
-    unsigned char type;
+    char type;
     short x;
     short y;
     unsigned char left_clicked;
@@ -22,10 +22,11 @@ struct Cursor {
     unsigned char icon[64];
 };
 
-// Initialize mouse serial port
+// Function to initialize the PS/2 mouse.
+// Returns -1 on failure, or the mouse ID on success
 char PS2_MouseInit();
 
-// Poll mouse information
+// Function to poll mouse information 
 char PS2_MousePoll(struct MouseInfo __far* mouse);
 
 #endif

@@ -24,12 +24,11 @@ void PS2_WaitForRead() {
     
 }
 
-// Helper function to wait for an acknowledgement signal
-unsigned char PS2_WaitForACK() {
-
-    unsigned char val;
+// Helper function to receive a byte
+unsigned char PS2_GetKeyboardByte() {
 
     // Get the chance to read, then get ACK or NAK
+    unsigned char val;
     PS2_WaitForRead();
     __asm {
         in al, 0x60
@@ -39,90 +38,163 @@ unsigned char PS2_WaitForACK() {
     
 }
 
-// Function to send a mouse command
-unsigned char PS2_SendMouseCommand(unsigned char command) {
+// Helper function to receive a byte
+unsigned char PS2_GetMouseByte() {
 
-    char res;
+    // Get the chance to read, then get ACK or NAK
+    unsigned char val;
+    __asm {
+        wait_mouse_read:
+            in al, 0x64
+            test al, 0x01
+            jz wait_mouse_read
 
-    // Wait for the chance to write
-    PS2_WaitForWrite();
-    do { 
-        __asm {
+            test al, 0x20
+            jnz done
+            in al, 0x60
+            jmp wait_mouse_read
 
-            // Specify mouse as destination for command
-            mov al, 0xD4
-            out 0x64, al
+        done:
+            in al, 0x60
+            mov val, al
+    }
 
-            // Send command
-            mov al, command
-            out 0x60, al
-            
-        }
-
-        // Ensure the command is sent properly
-        res = PS2_WaitForACK();
-    } while (res == 0xFE); // Resend if the result is the resend packet (0xFE)
-
-    // Return the value that was taken
-    return res;
-
+    // Return the retrieved value
+    return val;
+    
 }
 
+// Helper function to receive a byte (Keyboard)
+void PS2_SendKeyboardByte(unsigned char val) {
+
+    // Get the chance to write, and then send command
+    PS2_WaitForWrite();
+    __asm {
+        mov al, val
+        out 0x64, al
+    }
+    
+}
+
+// Helper function to receive a byte (Mouse)
+void PS2_SendMouseByte(unsigned char val) {
+
+    // Tell keyboard to access the mouse
+    PS2_SendKeyboardByte(0xD4);
+
+    // Get the chance to write, then send byte to mouse
+    PS2_WaitForWrite();
+    __asm {
+        in al, 0x60
+        mov val, al
+    }
+    
+}
+
+// Initialize the mouse for use with the GUI
 char PS2_MouseInit() {
 
+    // Helper result variable
     unsigned char res;
 
-    // Enable the mouse on the system
+    // Get the Compaq Status Byte
     PS2_WaitForWrite();
     __asm {
         mov al, 0x20
         out 0x64, al
     }
+
+    // Make bit 5 0 (1 = disables mouse, 0 = enables mouse) and save new status byte
     PS2_WaitForRead();
     __asm {
         in al, 0x60
-        //or al, 0x02
         and al, 0xDF
-        push ax
+        mov res, al
     }
+
+    // Tell the PS/2 controller to add the new status byte
     PS2_WaitForWrite();
     __asm {
         mov al, 0x60
         out 0x64, al
-        pop ax
+    }
+
+    // Send the new status over
+    PS2_WaitForWrite();
+    __asm {
+        mov al, res
         out 0x60, al
     }
 
-    // Open the PS/2 port for the mouse
+    // Tell the keyboard to send the following command to the mouse
+    PS2_WaitForWrite();
     __asm {
-        mov al, 0xAE
-        out 0x64, al
-        mov al, 0xA8
+        mov al, 0xD4
         out 0x64, al
     }
 
-    // Set defaults and change to "remote" mode (manually read data)
-    res = PS2_SendMouseCommand(0xFF);
-    res = PS2_SendMouseCommand(0xF6);
+    // Perform a reset on the mouse
+    PS2_WaitForWrite();
+    __asm {
+        mov al, 0xFF
+        out 0x60, al
+    }
+    
+    // Get acknowledgment byte
+    PS2_WaitForRead();
+    __asm {
+        in al, 0x60
+        mov res, al
+    }
     if (res != 0xFA) return -1;
-    res = PS2_SendMouseCommand(0xF0);
-    if (res != 0xFA) return -2;
 
-    // Assume basic mouse type (2 button mouse)
-    return 2;
+    // Get the successful mouse reboot byte (0xAA)
+    PS2_WaitForRead();
+    __asm {
+        in al, 0x60
+        mov res, al
+    }
+    if (res != 0xAA) return -1;
+
+    // Store and return the mouse ID
+    PS2_WaitForRead();
+    __asm {
+        in al, 0x60
+        mov res, al
+    }
+    return res;
 
 }
 
 // Poll mouse information
 char PS2_MousePoll(struct MouseInfo __far* mouse) {
 
+    // Helper variables
     short dx, dy;
     unsigned char res;
     unsigned char bytes[5];
 
-    // Send command for mouse packet
-    res = PS2_SendMouseCommand(0xEB);
-    PS2_WaitForACK();
+    // Inform keyboard to send the following command to the mouse
+    PS2_WaitForWrite();
+    __asm {
+        mov al, 0xD4
+        out 0x64, al
+    }
+
+    // Write command to print out the movement data
+    PS2_WaitForWrite();
+    __asm {
+        mov al, 0xEB
+        out 0x60, al
+    }
+    
+    // Get the acknowledgment byte and exit if failed
+    PS2_WaitForRead();
+    __asm {
+        in al, 0x60
+        mov res, al
+    }
+    if (res != 0xFA) return -1;
 
     // Get bytes for mouse packet
     for (char i = 0; i < 3; i++) {
@@ -137,6 +209,12 @@ char PS2_MousePoll(struct MouseInfo __far* mouse) {
 
     }
 
+    // See the button responses and put them in the mouse
+    if ((bytes[0] & 0x1)) mouse->left_clicked = 1;
+    else mouse->left_clicked = 0;
+    if ((bytes[0] & 0x2)) mouse->right_clicked = 1;
+    else mouse->right_clicked = 0;
+
     // Get the values that the cursor has moved in the X and Y directions
     dx = bytes[1];
     dx |= (bytes[0] & 0x40) << 1;
@@ -144,7 +222,6 @@ char PS2_MousePoll(struct MouseInfo __far* mouse) {
     dy = bytes[2];
     dy |= (bytes[0] & 0x80);
     dy |= ((bytes[0] & 0x20) >> 5) << 15;
-
 
     // Update X coordinate of mouse
     if (mouse->x + dx < 0) mouse->x = 0;

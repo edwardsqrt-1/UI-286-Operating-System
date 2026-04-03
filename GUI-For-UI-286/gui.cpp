@@ -44,7 +44,7 @@ void guiroot() {
     unsigned int i = 0;
     unsigned int y = 324;
     unsigned int x = 280;
-    unsigned char c, m;
+    unsigned char c, m, n;
     unsigned char color = 0;
     struct rtc_time __far* clock = (struct rtc_time __far *) 0x10000000L; // At address 0x10000
 
@@ -173,26 +173,32 @@ void guiroot() {
     GM_PutStr("RB:", 452, 362, 0xF, 0x2);
 
     // Add a message to exit the interface
-    GM_PutStr("Press Ctrl + X to exit this demo...", 2, 438, 0xA, 0x1); 
+    GM_PutStr("Press X to exit this demo...", 2, 438, 0xA, 0x1); 
 
     // Wait for the Control + X key stroke, and then go back to the CLI
     c = 0;
-    while (c != 0x18) {
+    while (c != 'X' && c != 'x') {
 
         // Get character if one exists in the buffer and get time
         c = GetChar();
         panel_clock.UpdateTime();
 
-        // Poll mouse
+        // Poll the mouse
         m = PS2_MousePoll(mouse);
-        GM_PutUInt(m, 0, 0, 0xC, 0x4);
 
-        // Update mouse coordinates
-        GM_PutUInt(mouse->x, 470, 302, 0xF, 0x2);
-        GM_PutUInt(mouse->y, 470, 322, 0xF, 0x2);
-        GM_PutUInt(mouse->left_clicked, 478, 342, 0xF, 0x2);
-        GM_PutUInt(mouse->right_clicked, 478, 362, 0xF, 0x2);
+        // Update mouse coordinates if successfully polled
+        if (m != -1) {
+            GM_PutUInt(mouse->x, 470, 302, 0xF, 0x2);
+            GM_PutUInt(mouse->y, 470, 322, 0xF, 0x2);
+            GM_PutUInt(mouse->left_clicked, 478, 342, 0xF, 0x2);
+            GM_PutUInt(mouse->right_clicked, 478, 362, 0xF, 0x2);
+        }
+
+        // Delay by a small amount (let the user see the mouse coordinates update)
+        Delay(150000);
     }
+
+    // Before exiting entirely, set the graphics mode back to text
     ResetGraphicsMode();
 
 }
