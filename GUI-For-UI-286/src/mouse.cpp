@@ -1,5 +1,19 @@
 #include <mouse.h>
 
+// Mouse cursor icon
+unsigned char default_cursor[80] = {
+        0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x0E, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x0E, 0x0E, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x0E, 0x0E, 0x0E, 0x00, 0xFF, 0xFF, 0xFF,
+        0x00, 0x0E, 0x0E, 0x0C, 0x04, 0x01, 0xFF, 0xFF,
+        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x04, 0x01, 0xFF,
+        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x04, 0x01,
+        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x01, 0x01, 0xFF,
+        0x00, 0x0C, 0x0C, 0x01, 0x01, 0xFF, 0xFF, 0xFF,
+        0x00, 0x01, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+};
+
 // Helper function to wait for the chance to write
 void PS2_WaitForWrite() {
 
@@ -218,21 +232,33 @@ char PS2_MousePoll(struct MouseInfo __far* mouse) {
     // Get the values that the cursor has moved in the X and Y directions
     dx = bytes[1];
     dx |= (bytes[0] & 0x40) << 1;
-    dx |= ((bytes[0] & 0x10) >> 4) << 15;
+    if (bytes[0] & 0x10) dx |= 0xFF00;
     dy = bytes[2];
     dy |= (bytes[0] & 0x80);
-    dy |= ((bytes[0] & 0x20) >> 5) << 15;
+    if (bytes[0] & 0x20) dy |= 0xFF00;
 
     // Update X coordinate of mouse
     if (mouse->x + dx < 0) mouse->x = 0;
-    else if (mouse->x + dx > 640) mouse->x = 640;
+    else if (mouse->x + dx >= 640) mouse->x = 639;
     else mouse->x += dx;
 
-    // Update Y coordinate of mouse
-    if (mouse->y + dy < 0) mouse->y = 0;
-    if (mouse->y + dy > 480) mouse->y = 480;
-    else mouse->y += dy;
+    // Update Y coordinate of mouse (must be inverted due to y = 0 being at the top of the screen rather than the bottom of the screen)
+    if (mouse->y - dy < 0) mouse->y = 0;
+    else if (mouse->y - dy >= 480) mouse->y = 479;
+    else mouse->y -= dy;
 
     // Successful polling
     return 0;
+}
+
+// Instruct the cursor to be moved to another part of the screen
+void PlaceCursor(struct MouseInfo __far* mouse, unsigned char* icon, unsigned char* screen_buff) {
+    unsigned short y_pixel, x_pixel;
+    for (y_pixel = 0; y_pixel < 10; y_pixel++) {
+        for (x_pixel = 0; x_pixel < 8; x_pixel++) {
+            if (mouse->x + x_pixel < 640 && mouse->x + x_pixel >= 0 && mouse->y + y_pixel < 480 && mouse->y + y_pixel >= 0) {
+                if (default_cursor[y_pixel*8 + x_pixel] != 0xFF) GM_PutPixel(mouse->x + x_pixel, mouse->y + y_pixel, default_cursor[y_pixel*8 + x_pixel]);
+            }
+        }
+    }
 }

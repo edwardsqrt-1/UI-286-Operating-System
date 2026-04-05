@@ -47,6 +47,8 @@ void guiroot() {
     unsigned char c, m, n;
     unsigned char color = 0;
     struct rtc_time __far* clock = (struct rtc_time __far *) 0x10000000L; // At address 0x10000
+    unsigned char* cursor_buff = (unsigned char*) 0x10000010L;
+    unsigned char* under_cursor_buff = (unsigned char*) 0x10000060L;
 
     // Initialize Panel
     Panel p(28);
@@ -186,16 +188,19 @@ void guiroot() {
         // Poll the mouse
         m = PS2_MousePoll(mouse);
 
-        // Update mouse coordinates if successfully polled
+        GM_PutStr("     ", 470, 302, 0xF, 0x2);
+        GM_PutStr("     ", 470, 322, 0xF, 0x2);
+        GM_PutStr("  ", 478, 342, 0xF, 0x2);
+        GM_PutStr("  ", 478, 362, 0xF, 0x2);
+
+        // Update mouse coordinates if successfully polled; place the cursor on screen
         if (m != -1) {
             GM_PutUInt(mouse->x, 470, 302, 0xF, 0x2);
             GM_PutUInt(mouse->y, 470, 322, 0xF, 0x2);
             GM_PutUInt(mouse->left_clicked, 478, 342, 0xF, 0x2);
             GM_PutUInt(mouse->right_clicked, 478, 362, 0xF, 0x2);
+            PlaceCursor(mouse, cursor_buff, under_cursor_buff);
         }
-
-        // Delay by a small amount (let the user see the mouse coordinates update)
-        Delay(150000);
     }
 
     // Before exiting entirely, set the graphics mode back to text
