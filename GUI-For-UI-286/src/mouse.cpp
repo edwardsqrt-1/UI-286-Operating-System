@@ -1,18 +1,6 @@
 #include <mouse.h>
 
-// Mouse cursor icon
-unsigned char default_cursor[80] = {
-        0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0x00, 0x0E, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0x00, 0x0E, 0x0E, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
-        0x00, 0x0E, 0x0E, 0x0E, 0x00, 0xFF, 0xFF, 0xFF,
-        0x00, 0x0E, 0x0E, 0x0C, 0x04, 0x01, 0xFF, 0xFF,
-        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x04, 0x01, 0xFF,
-        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x04, 0x01,
-        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x01, 0x01, 0xFF,
-        0x00, 0x0C, 0x0C, 0x01, 0x01, 0xFF, 0xFF, 0xFF,
-        0x00, 0x01, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
-};
+/* HELPER FUNCTIONS */
 
 // Helper function to wait for the chance to write
 void PS2_WaitForWrite() {
@@ -105,6 +93,8 @@ void PS2_SendMouseByte(unsigned char val) {
     
 }
 
+/* Base Mouse Functions */
+
 // Initialize the mouse for use with the GUI
 char PS2_MouseInit() {
 
@@ -181,7 +171,7 @@ char PS2_MouseInit() {
 }
 
 // Poll mouse information
-char PS2_MousePoll(struct MouseInfo __far* mouse) {
+char PS2_MousePoll(struct MouseInfo* mouse) {
 
     // Helper variables
     short dx, dy;
@@ -251,14 +241,70 @@ char PS2_MousePoll(struct MouseInfo __far* mouse) {
     return 0;
 }
 
-// Instruct the cursor to be moved to another part of the screen
-void PlaceCursor(struct MouseInfo __far* mouse, unsigned char* icon, unsigned char* screen_buff) {
-    unsigned short y_pixel, x_pixel;
+/* Cursor Class Functions */
+
+// Initialize the cursor onto the screen
+Cursor::Cursor(unsigned short x, unsigned short y, unsigned char* mouse_bitmap) {
+
+    // Helper variables
+    unsigned short y_pixel, x_pixel, i;
+
+    // Initialize internal mouse structure
+    last_x = x;
+    last_y = y;
+    mouse.x = x;
+    mouse.y = y;
+    mouse.left_clicked = 0;
+    mouse.right_clicked = 0;
+
+    // Copy mouse bitmap from the selected mouse bitmap
+    for (i = 0; i < 80; i++) icon[i] = mouse_bitmap[i];
+
+    // Save pixels that are about to be overwritten by the cursor, then write the cursor to the screen
     for (y_pixel = 0; y_pixel < 10; y_pixel++) {
         for (x_pixel = 0; x_pixel < 8; x_pixel++) {
-            if (mouse->x + x_pixel < 640 && mouse->x + x_pixel >= 0 && mouse->y + y_pixel < 480 && mouse->y + y_pixel >= 0) {
-                if (default_cursor[y_pixel*8 + x_pixel] != 0xFF) GM_PutPixel(mouse->x + x_pixel, mouse->y + y_pixel, default_cursor[y_pixel*8 + x_pixel]);
+            if (x + x_pixel < 640 && x + x_pixel >= 0 && y + y_pixel < 480 && y + y_pixel >= 0) {
+                screen[y_pixel*8 + x_pixel] = GM_GetPixel(x + x_pixel, y + y_pixel);
+                if (icon[y_pixel*8 + x_pixel] != 0xFF) GM_PutPixel(x + x_pixel, y + y_pixel, icon[y_pixel*8 + x_pixel]);     
             }
         }
     }
+
+}
+
+// Get access to the status of the mouse file
+struct MouseInfo* Cursor::AccessState() { return &mouse; }
+
+// Set the type of mouse that is being used
+void Cursor::SetType(unsigned char type) { mouse.type = type; }
+
+// Change the icon that is being used
+void Cursor::ChangeIcon(unsigned char* new_bitmap) { for (unsigned char i = 0; i < 80; i++) icon[i] = new_bitmap[i]; }
+
+// Instruct the cursor to be moved to another part of the screen
+void Cursor::PlaceCursor() {
+    unsigned short y_pixel, x_pixel;
+
+    // If cursor was just initialized; ignore. Otherwise, replace the last finding of the cursor with the screen contents the cursor covered
+    for (y_pixel = 0; y_pixel < 10; y_pixel++) {
+        for (x_pixel = 0; x_pixel < 8; x_pixel++) {
+            if (last_x + x_pixel < 640 && last_x + x_pixel >= 0 && last_y + y_pixel < 480 && last_y + y_pixel >= 0) {
+                if (screen[y_pixel*8 + x_pixel] != 0xFF) GM_PutPixel(last_x + x_pixel, last_y + y_pixel, screen[y_pixel*8 + x_pixel]);
+            }
+        }
+    }
+
+    // Draw the cursor in the new part of the screen
+    for (y_pixel = 0; y_pixel < 10; y_pixel++) {
+        for (x_pixel = 0; x_pixel < 8; x_pixel++) {
+            if (mouse.x + x_pixel < 640 && mouse.x + x_pixel >= 0 && mouse.y + y_pixel < 480 && mouse.y + y_pixel >= 0) {
+                screen[y_pixel*8 + x_pixel] = GM_GetPixel(mouse.x + x_pixel, mouse.y + y_pixel);
+                if (icon[y_pixel*8 + x_pixel] != 0xFF) GM_PutPixel(mouse.x + x_pixel, mouse.y + y_pixel, icon[y_pixel*8 + x_pixel]);
+            }
+        }
+    }
+
+    // Update the last coordinates
+    last_x = mouse.x;
+    last_y = mouse.y;
 }

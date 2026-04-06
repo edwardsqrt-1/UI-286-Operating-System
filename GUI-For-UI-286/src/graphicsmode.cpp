@@ -1,6 +1,6 @@
 #include <graphicsmode.h>
 
-// Place a single pixel on the screen at the specified coordinates with foreground and background
+// Place a single pixel on the screen at the specified coordinates
 void GM_PutPixel(unsigned short x, unsigned short y, unsigned char c) {
 
     // Testing code only with BIOS Interrupts; intending to replace with direct VGA control
@@ -15,7 +15,24 @@ void GM_PutPixel(unsigned short x, unsigned short y, unsigned char c) {
 
 }
 
-// Displays a line on the screen
+// Get the color of a selected pixel
+unsigned char GM_GetPixel(unsigned short x, unsigned short y) {
+
+    // Testing code only with BIOS Interrupts; intending to replace with direct VGA control
+    unsigned char color;
+    __asm {
+        mov ah, 0x0D
+        xor bx, bx
+        mov cx, x
+        mov dx, y
+        int 0x10
+        mov color, al
+    }
+    return color;
+
+}
+
+// Displays a line on the screen (UNFINISHED)
 void GM_PutLine(unsigned short x_1, unsigned short y_1, unsigned short x_2, unsigned short y_2, unsigned char c) {
 
     unsigned char rise = y_2 - y_1;

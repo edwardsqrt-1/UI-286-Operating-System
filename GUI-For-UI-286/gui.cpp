@@ -37,6 +37,34 @@ void __far entrypoint() {
     return;
 }
 
+// Default mouse cursor icon for the GUI
+unsigned char default_cursor[80] = {
+        0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x0E, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x0E, 0x0E, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x0E, 0x0E, 0x0E, 0x00, 0xFF, 0xFF, 0xFF,
+        0x00, 0x0E, 0x0E, 0x0C, 0x04, 0x01, 0xFF, 0xFF,
+        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x04, 0x01, 0xFF,
+        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x04, 0x01,
+        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x01, 0x01, 0xFF,
+        0x00, 0x0C, 0x0C, 0x01, 0x01, 0xFF, 0xFF, 0xFF,
+        0x00, 0x01, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+};
+
+// Click mouse cursor icon for the GUI
+unsigned char click_cursor[80] = {
+        0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x03, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x03, 0x03, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x00, 0x03, 0x03, 0x03, 0x00, 0xFF, 0xFF, 0xFF,
+        0x00, 0x03, 0x03, 0x0C, 0x04, 0x01, 0xFF, 0xFF,
+        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x04, 0x01, 0xFF,
+        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x04, 0x01,
+        0x00, 0x0C, 0x0C, 0x0C, 0x0C, 0x01, 0x01, 0xFF,
+        0x00, 0x0C, 0x0C, 0x01, 0x01, 0xFF, 0xFF, 0xFF,
+        0x00, 0x01, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+};
+
 // Driver program for the GUI
 void guiroot() { 
 
@@ -44,11 +72,9 @@ void guiroot() {
     unsigned int i = 0;
     unsigned int y = 324;
     unsigned int x = 280;
-    unsigned char c, m, n;
+    char c, m, n;
     unsigned char color = 0;
     struct rtc_time __far* clock = (struct rtc_time __far *) 0x10000000L; // At address 0x10000
-    unsigned char* cursor_buff = (unsigned char*) 0x10000010L;
-    unsigned char* under_cursor_buff = (unsigned char*) 0x10000060L;
 
     // Initialize Panel
     Panel p(28);
@@ -137,6 +163,23 @@ void guiroot() {
     if (clock->month == 12 && clock->day == 25) GM_PutStr("Merry Christmas!", 150, 276, 0xA, 0x1);
     if (clock->month == 2 && clock->day == 14) GM_PutStr("Made with love!", 150, 276, 0xD, 0x1); 
 
+    // Draw panel and widgets
+    p.Draw();
+
+    // Initialize the mouse and create a box for it
+    Cursor cur(320, 240, default_cursor);
+    m = PS2_MouseInit();
+    if (m >= 0) cur.SetType(m); 
+    GM_PutUInt(m, 2, 428, 0xA, 0x1);
+    GM_PutRect(450, 300, 80, 80, 0x2, 0xF);
+    GM_PutStr("X:", 452, 302, 0xF, 0x2);
+    GM_PutStr("Y:", 452, 322, 0xF, 0x2);
+    GM_PutStr("LB:", 452, 342, 0xF, 0x2);
+    GM_PutStr("RB:", 452, 362, 0xF, 0x2);
+
+    // Add a message to exit the interface
+    GM_PutStr("Press X to exit this demo...", 2, 438, 0xA, 0x1); 
+
     // Print each implemented character to the screen
     y = 324;
     x = 240;
@@ -155,28 +198,6 @@ void guiroot() {
 
     }
 
-    // Draw panel and widgets
-    p.Draw();
-
-    // Create a mouse info box and structure
-    struct MouseInfo __far* mouse = (struct MouseInfo __far *) 0x10000000L; // Also at address 0x10000 (the clock is not used here anymore)
-    mouse->x = 320;
-    mouse->y = 240;
-    mouse->left_clicked = 0;
-    mouse->right_clicked = 0;
-
-    // Initialize the mouse and create a box for it
-    mouse->type = PS2_MouseInit();
-    GM_PutUInt(mouse->type, 2, 428, 0xA, 0x1);
-    GM_PutRect(450, 300, 80, 80, 0x2, 0xF);
-    GM_PutStr("X:", 452, 302, 0xF, 0x2);
-    GM_PutStr("Y:", 452, 322, 0xF, 0x2);
-    GM_PutStr("LB:", 452, 342, 0xF, 0x2);
-    GM_PutStr("RB:", 452, 362, 0xF, 0x2);
-
-    // Add a message to exit the interface
-    GM_PutStr("Press X to exit this demo...", 2, 438, 0xA, 0x1); 
-
     // Wait for the Control + X key stroke, and then go back to the CLI
     c = 0;
     while (c != 'X' && c != 'x') {
@@ -186,8 +207,7 @@ void guiroot() {
         panel_clock.UpdateTime();
 
         // Poll the mouse
-        m = PS2_MousePoll(mouse);
-
+        m = PS2_MousePoll(cur.AccessState());
         GM_PutStr("     ", 470, 302, 0xF, 0x2);
         GM_PutStr("     ", 470, 322, 0xF, 0x2);
         GM_PutStr("  ", 478, 342, 0xF, 0x2);
@@ -195,11 +215,13 @@ void guiroot() {
 
         // Update mouse coordinates if successfully polled; place the cursor on screen
         if (m != -1) {
-            GM_PutUInt(mouse->x, 470, 302, 0xF, 0x2);
-            GM_PutUInt(mouse->y, 470, 322, 0xF, 0x2);
-            GM_PutUInt(mouse->left_clicked, 478, 342, 0xF, 0x2);
-            GM_PutUInt(mouse->right_clicked, 478, 362, 0xF, 0x2);
-            PlaceCursor(mouse, cursor_buff, under_cursor_buff);
+            GM_PutUInt(cur.AccessState()->x, 470, 302, 0xF, 0x2);
+            GM_PutUInt(cur.AccessState()->y, 470, 322, 0xF, 0x2);
+            GM_PutUInt(cur.AccessState()->left_clicked, 478, 342, 0xF, 0x2);
+            GM_PutUInt(cur.AccessState()->right_clicked, 478, 362, 0xF, 0x2);
+            if (cur.AccessState()->left_clicked || cur.AccessState()->right_clicked) cur.ChangeIcon(click_cursor);
+            else cur.ChangeIcon(default_cursor);
+            cur.PlaceCursor();
         }
     }
 

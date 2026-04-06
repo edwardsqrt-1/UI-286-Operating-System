@@ -7,7 +7,7 @@
 #define UNKNOWN_MOUSE 0
 #include <graphicsmode.h>
 
-// Structure to contain mouse information
+// Structure to contain mouse information as the mouse reads
 struct MouseInfo {
     char type;
     short x;
@@ -17,10 +17,22 @@ struct MouseInfo {
 };
 
 // Structure for a cursor
-struct Cursor {
-    unsigned short x;
-    unsigned short y;
-    unsigned char* icon;
+class Cursor {
+
+    private:
+        unsigned short last_x;
+        unsigned short last_y;
+        struct MouseInfo mouse;     // Mouse information struct that acts as the base for the cursor
+        unsigned char icon[80];     // Icon the cursor uses to display onto the screen
+        unsigned char screen[80];   // Pixels the cursor will cover up
+
+    public:
+        Cursor(unsigned short x, unsigned short y, unsigned char* mouse_bitmap);    // Initialize the cursor with coordinates and icon
+        struct MouseInfo* AccessState();            // Access the mouse state directly
+        void SetType(unsigned char type);           // Set the type of mouse the cursor is using
+        void ChangeIcon(unsigned char* new_bitmap); // Change the icon of the cursor
+        void PlaceCursor();                         // Place the cursor on the screen
+
 };
 
 // Function to initialize the PS/2 mouse.
@@ -28,9 +40,7 @@ struct Cursor {
 char PS2_MouseInit();
 
 // Function to poll mouse information 
-char PS2_MousePoll(struct MouseInfo __far* mouse);
-
-// Move the cursor with the given mouse information
-void PlaceCursor(struct MouseInfo __far* mouse, unsigned char* icon, unsigned char* screen_buff);
+// Returns -1 on failure, or 0 on success
+char PS2_MousePoll(struct MouseInfo* mouse);
 
 #endif

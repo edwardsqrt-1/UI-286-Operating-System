@@ -10,6 +10,9 @@
 // Procedure to place a pixel on the screen
 void GM_PutPixel(unsigned short x, unsigned short y, unsigned char c);
 
+// Function to get a pixel color from the screen
+unsigned char GM_GetPixel(unsigned short x, unsigned short y);
+
 // Procedure to put a line on the screen
 void GM_PutLine(unsigned short x_1, unsigned short y_1, unsigned short x_2, unsigned short y_2, unsigned char c);
 
