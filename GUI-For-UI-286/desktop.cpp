@@ -99,6 +99,18 @@ void guiroot() {
     m = PS2_MouseInit();
     if (m >= 0) cur.SetType(m);
 
+    // Test out desktop widgets
+    DesktopWidget dw1("Test #1", 4, 4);
+    DesktopWidget dw2("Test #2", 78, 4);
+    DesktopWidget dw3("Test #3", 152, 4);
+    DesktopWidget dw4("Test #4", 226, 4);
+
+    // Draw said desktop widgets
+    dw1.Draw();
+    dw2.Draw();
+    dw3.Draw();
+    dw4.Draw();
+
     // Wait for the Control + X key stroke, and then go back to the CLI
     c = 0;
     while (c != 'X' && c != 'x') {

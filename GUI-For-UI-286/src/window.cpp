@@ -22,8 +22,7 @@ Window::Window() {
 void Window::Draw() {
 
     // Helper variables
-    unsigned short x;
-    unsigned short y;
+    unsigned short x, y;
 
     // Loop through every pixel in the range of the window
     for (x = estate.x; x < estate.x + estate.w; x++) {
