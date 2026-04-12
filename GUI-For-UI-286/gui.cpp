@@ -1,16 +1,10 @@
 /*
- * Program: GUI for the UI(286) Operating System
+ * Program: Demo GUI Application for the UI(286) Operating System
  * Author: Edward Bierens
  * Date Created: Tuesday March 10th, 2026
  * 
- * Description: A Command Line Interface is not enough for the modern day; as such UI(286) has an
- * optional Graphical User Interface Shell that it can run. For now, this displays a demo screen with a character 
- * map for 10 seconds, then exits. 
- * 
- * Developer's note: This is a subproject of UI(286); the header and source files that exist in the UI(286)
- * directory can and will be copied and pasted in the respective include and src directories (but must be renamed 
- * and adapted to C++ from C).
- * 
+ * Description: A testing interface for all of the UI(286) graphical functions 
+ *  
  */
 
 #include <gmodes.h>

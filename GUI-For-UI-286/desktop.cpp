@@ -1,15 +1,11 @@
 /*
  * Program: GUI for the UI(286) Operating System
  * Author: Edward Bierens
- * Date Created: Tuesday March 10th, 2026
+ * Date Created: Sunday April 12th, 2026
  * 
  * Description: A Command Line Interface is not enough for the modern day; as such UI(286) has an
  * optional Graphical User Interface Shell that it can run. For now, this displays a demo screen with a character 
  * map for 10 seconds, then exits. 
- * 
- * Developer's note: This is a subproject of UI(286); the header and source files that exist in the UI(286)
- * directory can and will be copied and pasted in the respective include and src directories (but must be renamed 
- * and adapted to C++ from C).
  * 
  */
 
@@ -19,6 +15,7 @@
 #include <panel.h>
 #include <string.h>
 #include <mouse.h>
+#include <window.h>
 
 // Externally define the cursor and background maps
 extern unsigned char default_cursor[80];
@@ -83,6 +80,7 @@ void guiroot() {
     // Add a cool gradient at the top
     GM_BlankScreen(0x1);
 
+    // Draw the desktop background
     for (y = 0; y < 480 - p.Height(); y++) {
         for (x = 0; x < 640; x++) {
             GM_PutPixel(x, y, pattern[(y & 0x7) * 8 + (x & 0x7)]);
@@ -91,6 +89,10 @@ void guiroot() {
 
     // Draw panel and widgets
     p.Draw();
+
+    // Initialize Welcome Window
+    Window hello_world;
+    hello_world.Draw();
 
     // Initialize the mouse
     Cursor cur(320, 240, default_cursor);
@@ -165,6 +167,7 @@ unsigned char right_click_cursor[80] = {
         0x00, 0x01, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 };
 
+// Background pattern
 unsigned char pattern[64] = {
     0x5,0x5,0x1,0x1,0x1,0x1,0x3,0x3,
     0x5,0x1,0x1,0x9,0x9,0x1,0x1,0x3,
