@@ -285,6 +285,9 @@ void Cursor::ChangeIcon(unsigned char* new_bitmap) { for (unsigned char i = 0; i
 void Cursor::PlaceCursor() {
     unsigned short y_pixel, x_pixel;
 
+    // Ignore redrawing stationary mouse movement
+    if (last_x == mouse.x && last_x == mouse.y) return;
+
     // If cursor was just initialized; ignore. Otherwise, replace the last finding of the cursor with the screen contents the cursor covered
     for (y_pixel = 0; y_pixel < 10; y_pixel++) {
         for (x_pixel = 0; x_pixel < 8; x_pixel++) {
