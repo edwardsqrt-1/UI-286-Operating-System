@@ -9,11 +9,11 @@
 ; Definitions go here (are not in the program itself)
 VGA_MEMORY_TEXT     equ 0xB800 ; Memory address for VGA Text Mode 80x25
 STACK_OFF_ADDRESS   equ 0x0
-STACK_SEG_ADDR      equ 0x50
+STACK_SEG_ADDR      equ 0x0980
 STACK_SIZE_BYTES    equ 10
 KEYBOARD_ADDRESS    equ 0x041E
 K_CODE_OFFSET       equ 0
-K_CODE_SEGMENT      equ 0x70
+K_CODE_SEGMENT      equ 0x50
 K_DATA_OFFSET       equ 0
 K_DATA_SEGMENT      equ 0x1E0
 
