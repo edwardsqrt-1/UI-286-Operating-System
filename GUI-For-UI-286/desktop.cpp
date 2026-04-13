@@ -50,6 +50,9 @@ void guiroot() {
     char c, m, n;
     unsigned char color = 0;
     struct MouseInfo* mouse_state;
+    unsigned short clicked_x = 0xFFFF;
+    unsigned short clicked_y = 0xFFFF;
+    unsigned char mouse_down = 0;
 
     // Initialize Panel
     Panel p(28);
@@ -125,9 +128,33 @@ void guiroot() {
 
         // Move the cursor if a new poll was successfully retreived
         if (m != -1) {
-            if (mouse_state->left_clicked) cur.ChangeIcon(left_click_cursor);
-            else if (mouse_state->right_clicked) cur.ChangeIcon(right_click_cursor);
-            else cur.ChangeIcon(default_cursor);
+
+            // Address mouse not clicked 
+            if (!mouse_state->left_clicked && !mouse_state->right_clicked) {
+
+                GM_PutStr("              ", 520, 0, 0xF, 0x1);
+                // Change cursor icon to default
+                cur.ChangeIcon(default_cursor);
+
+                // If the mouse is no longer pressed from a click, send an event
+                if (mouse_down == 1) {
+                    mouse_down = 0;
+                    GM_PutStr("Mouse Clicked!", 520, 0, 0xF, 0x1);
+                    Delay(500000);
+                }
+
+            } else { // The mouse has a button down
+
+                // Change icon depending on what button was clicked
+                if (mouse_state->left_clicked) cur.ChangeIcon(left_click_cursor);
+                else if (mouse_state->right_clicked) cur.ChangeIcon(right_click_cursor);
+
+                // Log the coordinates originally clicked
+                mouse_down = 1;
+                clicked_x = mouse_state->x;
+                clicked_y = mouse_state->y;
+
+            }
             cur.PlaceCursor();
         }
     }
