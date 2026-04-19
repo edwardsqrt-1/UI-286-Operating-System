@@ -58,6 +58,9 @@ void ShutdownPC() {
     }
 }
 
+// Exit function
+void ExitGUI() { GUIRunning = 0; }
+
 // A catalog of all the widgets in the UI(286) Operating System
 Widget* widget_list[50];
 unsigned int widget_list_size = 0;
@@ -105,7 +108,7 @@ void guiroot() {
     p.AddWidget(&shutdown);
 
     // Test widget 2 on the 2nd furthest from the right
-    PanelActionWidget ret(490, 50, p.Height(), 0);
+    PanelActionWidget ret(490, 50, p.Height(), ExitGUI);
     RegisterWidget(&ret);
     ret.SetColor(0x5);
     p.AddWidget(&ret);
@@ -158,12 +161,17 @@ void guiroot() {
     dw3.Draw();
     dw4.Draw();
 
-    // Wait for the Control + X key stroke, and then go back to the CLI
+    // Wait for the X key stroke, and then go back to the CLI
     c = 0;
-    while (c != 'X' && c != 'x') {
+    while (GUIRunning) {
 
+        
         // Get character if one exists in the buffer and get time
         c = GetChar();
+        if (c == 'x' || c == 'X') {
+            GUIRunning = 0;
+            break;
+        }
         panel_clock.UpdateTime();
 
         // Poll the mouse
