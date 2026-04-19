@@ -13,7 +13,6 @@ class PanelWidget : public Widget {
 
     public:
 
-        PanelWidget(unsigned short start, unsigned short len, unsigned short panel_height);    // Initialize panel widget
         void SetColor(unsigned char c);     // Set widget background color
         void SetBorder(unsigned char c);    // Set border color of widget
         void Draw();                        // Draw widget on the screen
@@ -27,23 +26,19 @@ class PanelClockWidget : public PanelWidget {
 
     public:
 
-        // Use base constructor of the PanelWidget class
-        PanelClockWidget(unsigned short start, unsigned short len, unsigned short panel_height) : PanelWidget(start, len, panel_height) {
-            GetTime(&val);
-        }
+        PanelClockWidget(unsigned short start, unsigned short len, unsigned short panel_height); // Construct the clock widget on the panel
         void UpdateTime();  // Update time value and print it on screen
+        void OnClick(); // Handle a click to a button
     
 };
 
 // Panel Widget that is meant to perform an action when clicked
 class PanelActionWidget : public PanelWidget {
 
-    private:
-        typedef void (* action)(void); // Pointer type declaration to a void function with no arguments
-
     public:
-        action OnClick; // The actual pointer to said function
-
+        PanelActionWidget(unsigned short start, unsigned short len, unsigned short panel_height, void (*target)()); // Construct the action widget for the panel
+        void (*execute)(); // The actual pointer to said function
+        void OnClick(); // Handle a click to a button
 
 };
 

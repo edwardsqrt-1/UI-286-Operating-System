@@ -20,8 +20,10 @@ void PanelWidget::Draw() {
     }
 }
 
-// Construct the panel widget
-PanelWidget::PanelWidget(unsigned short start, unsigned short len, unsigned short panel_height) {
+/* PANEL ACTION BUTTON FUNCTIONS */
+
+// Construct the panel action widget
+PanelActionWidget::PanelActionWidget(unsigned short start, unsigned short len, unsigned short panel_height, void (*target)()) {
     
     // Set dimensions
     estate.x = start;
@@ -33,9 +35,34 @@ PanelWidget::PanelWidget(unsigned short start, unsigned short len, unsigned shor
     fill_color = 0x1;
     border_color = 0xF;
 
+    execute = target;
+
+}
+
+// On click, execute the embedded function
+void PanelActionWidget::OnClick() {
+    execute();
 }
 
 /* PANEL CLOCK FUNCTIONS */
+
+// Construct the panel action widget
+PanelClockWidget::PanelClockWidget(unsigned short start, unsigned short len, unsigned short panel_height) {
+    
+    // Set dimensions
+    estate.x = start;
+    estate.y = 480 - panel_height;
+    estate.w = len;
+    estate.h = panel_height;
+
+    // Set colors
+    fill_color = 0x1;
+    border_color = 0xF;
+
+    // Set initial function to null
+    GetTime(&val);
+
+}
 
 // Update the clock and draw the new time
 void PanelClockWidget::UpdateTime() {
@@ -62,6 +89,13 @@ void PanelClockWidget::UpdateTime() {
         GM_PutUInt(val.minute, x+32, y, 0xF, fill_color);
     } else GM_PutUInt(val.minute, x+24, y, 0xF, fill_color);
 
+}
+
+// Handle a click on the panel clock widget
+void PanelClockWidget::OnClick() {
+    fill_color = (fill_color + 1) & 0xF;
+    Draw();
+    UpdateTime();
 }
 
 /* PANEL FUNCTIONS */

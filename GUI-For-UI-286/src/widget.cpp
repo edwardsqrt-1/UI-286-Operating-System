@@ -14,11 +14,15 @@ unsigned char default_desktop_icon[64] = {
 
 };
 
+// Get the rectangle corresponding to the widget area occupied on the screen
+Rectangle* Widget::GetEstate() { return &estate; }
+
 // Initialize a desktop widget with a given name and coordinates. Also use the default icon
 DesktopWidget::DesktopWidget(char* name, unsigned short x, unsigned short y) {
 
     unsigned char i;
 
+    // Set widget parameters
     fill_color = 0x1;
     aux_fill_color = 0x3;
     border_color = 0xF;
@@ -81,3 +85,14 @@ void DesktopWidget::Draw() {
     }
 
 }   
+
+// Click event for a desktop widget
+void DesktopWidget::OnClick() {
+
+    // Cycle through a color as an example
+    fill_color = (fill_color + 1) & 0xF;
+
+    // Update widget
+    Draw();
+
+}

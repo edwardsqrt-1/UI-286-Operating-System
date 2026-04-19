@@ -19,6 +19,8 @@ class Window {
     public:
         Window();       // Window constructor
         void Draw();    // Function to draw a window
+        Rectangle* GetEstate(); // Get the rectangular area the window occupies
+        void OnClick(unsigned short x, unsigned short y);   // Handle a click at a location
         
 };
 

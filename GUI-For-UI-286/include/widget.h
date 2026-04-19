@@ -15,8 +15,10 @@ class Widget {
         Rectangle estate;               // Rectangle that the widget will take on the screen
 
     public:
-    
-        virtual void Draw() = 0;        // Template for drawing the widget
+
+        Rectangle* GetEstate();         // Get the rectangular area of the widget
+        virtual void Draw() = 0;        // Prototype for drawing the widget
+        virtual void OnClick() = 0;     // Prototype for handling a click
 
 };
 
@@ -30,9 +32,10 @@ class DesktopWidget : public Widget {
 
     public:
         DesktopWidget(char* name, unsigned short x, unsigned short y);  // Constructor for the desktop widget
-        void SetIcon(unsigned char* new_icon);              // Set icon
-        void ResetIcon();                                   // Reset icon to default
-        void Draw();                                        // Draw widget onto screen
+        void SetIcon(unsigned char* new_icon);  // Set icon
+        void ResetIcon();                       // Reset icon to default
+        void Draw();                            // Draw widget onto screen
+        void OnClick();                         // Handle a click from the mouse
 };
 
 #endif

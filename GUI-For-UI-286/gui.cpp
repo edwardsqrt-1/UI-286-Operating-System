@@ -51,17 +51,17 @@ void guiroot() {
     Panel p(28);
 
     // Test widget 0 on the left
-    PanelWidget label(0, 150, p.Height());
+    PanelActionWidget label(0, 150, p.Height(), guiroot);
     label.SetColor(0x7);
     p.AddWidget(&label);
 
     // Test widget 1 on the 3rd furthest from the right
-    PanelWidget shutdown(440, 50, p.Height());
+    PanelActionWidget shutdown(440, 50, p.Height(), guiroot);
     shutdown.SetColor(0x4);
     p.AddWidget(&shutdown);
 
     // Test widget 2 on the 2nd furthest from the right
-    PanelWidget ret(490, 50, p.Height());
+    PanelActionWidget ret(490, 50, p.Height(), guiroot);
     ret.SetColor(0x5);
     p.AddWidget(&ret);
 

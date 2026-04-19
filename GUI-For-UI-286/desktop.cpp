@@ -16,6 +16,7 @@
 #include <string.h>
 #include <mouse.h>
 #include <window.h>
+#include <widget.h>
 
 // Externally define the cursor and background maps
 extern unsigned char default_cursor[80];
@@ -40,6 +41,39 @@ void __far entrypoint() {
     return;
 }
 
+// Flag to determine whether the GUI is running
+char GUIRunning = 1;
+
+// Shutdown function
+void ShutdownPC() {
+    
+    // Print shutdown screen
+    GM_BlankScreen(0x0);
+    GM_PutStr("UI(286) was closed by the user.", 1, 1, 0xF, 0x0);
+    GM_PutStr("You may now shut your computer down safely.", 1, 12, 0xA, 0x0);
+    
+    // Do no operations
+    while (1) __asm {
+        nop
+    }
+}
+
+// A catalog of all the widgets in the UI(286) Operating System
+Widget* widget_list[50];
+unsigned int widget_list_size = 0;
+void RegisterWidget(Widget* w) {
+    widget_list[widget_list_size] = w;
+    widget_list_size++;
+}
+
+// A catalog of all open windows in the UI(286) Operating System
+Window* window_list[5];
+unsigned int window_list_size = 0;
+void RegisterWindow(Window* w) {
+    window_list[window_list_size] = w;
+    window_list_size++;
+}
+
 // Driver program for the GUI
 void guiroot() { 
 
@@ -53,27 +87,32 @@ void guiroot() {
     unsigned short clicked_x = 0xFFFF;
     unsigned short clicked_y = 0xFFFF;
     unsigned char mouse_down = 0;
+    Rectangle* win_area;
 
     // Initialize Panel
     Panel p(28);
 
     // Test widget 0 on the left
-    PanelWidget label(0, 150, p.Height());
+    PanelActionWidget label(0, 150, p.Height(), 0);
+    RegisterWidget(&label);
     label.SetColor(0x7);
     p.AddWidget(&label);
 
     // Test widget 1 on the 3rd furthest from the right
-    PanelWidget shutdown(440, 50, p.Height());
+    PanelActionWidget shutdown(440, 50, p.Height(), ShutdownPC);
+    RegisterWidget(&shutdown);
     shutdown.SetColor(0x4);
     p.AddWidget(&shutdown);
 
     // Test widget 2 on the 2nd furthest from the right
-    PanelWidget ret(490, 50, p.Height());
+    PanelActionWidget ret(490, 50, p.Height(), 0);
+    RegisterWidget(&ret);
     ret.SetColor(0x5);
     p.AddWidget(&ret);
 
     // Test widget 3 on the right side of the panel
     PanelClockWidget panel_clock(540, 100, p.Height());
+    RegisterWidget(&panel_clock);
     panel_clock.SetColor(0x3);
     p.AddWidget(&panel_clock);
 
@@ -95,6 +134,7 @@ void guiroot() {
 
     // Initialize Welcome Window
     Window hello_world;
+    RegisterWindow(&hello_world);
     hello_world.Draw();
 
     // Initialize the mouse
@@ -104,9 +144,13 @@ void guiroot() {
 
     // Test out desktop widgets
     DesktopWidget dw1("Test #1", 4, 4);
+    RegisterWidget(&dw1);
     DesktopWidget dw2("Test #2", 78, 4);
+    RegisterWidget(&dw2);
     DesktopWidget dw3("Test #3", 152, 4);
+    RegisterWidget(&dw3);
     DesktopWidget dw4("Test #4", 226, 4);
+    RegisterWidget(&dw4);
 
     // Draw said desktop widgets
     dw1.Draw();
@@ -132,16 +176,36 @@ void guiroot() {
             // Address mouse not clicked 
             if (!mouse_state->left_clicked && !mouse_state->right_clicked) {
 
-                GM_PutStr("              ", 520, 0, 0xF, 0x1);
-                // Change cursor icon to default
-                cur.ChangeIcon(default_cursor);
-
                 // If the mouse is no longer pressed from a click, send an event
                 if (mouse_down == 1) {
                     mouse_down = 0;
-                    GM_PutStr("Mouse Clicked!", 520, 0, 0xF, 0x1);
-                    Delay(500000);
+
+                    // Get window dimensions and check if anywhere in the window was clicked
+                    for (i = 0; i < window_list_size; i++) {
+                        win_area = window_list[i]->GetEstate();
+                        if (clicked_x >= win_area->x && clicked_x < win_area->x + win_area->w
+                            && clicked_y >= win_area->y && clicked_y < win_area->y + win_area->h) {
+                                window_list[i]->OnClick(clicked_x, clicked_y);
+                                i = 0xFFFF;
+                                break;
+                            }
+                    }
+
+                    // Get widget dimensions and check if a widget was clicked unless a window was already clicked
+                    if (i != 0xFFFF) for (i = 0; i < widget_list_size; i++) {
+                        win_area = widget_list[i]->GetEstate();
+                        if (clicked_x >= win_area->x && clicked_x < win_area->x + win_area->w
+                            && clicked_y >= win_area->y && clicked_y < win_area->y + win_area->h) {
+                                widget_list[i]->OnClick();
+                                break;
+                            }
+                    }
                 }
+
+                // Change cursor icon to default
+                cur.ChangeIcon(default_cursor);
+                cur.PlaceCursor();
+                
 
             } else { // The mouse has a button down
 
@@ -155,8 +219,10 @@ void guiroot() {
                 clicked_y = mouse_state->y;
 
             }
-            cur.PlaceCursor();
         }
+
+        // Place cursor just in case 
+        cur.PlaceCursor();
     }
 
     // Before exiting entirely, set the graphics mode back to text

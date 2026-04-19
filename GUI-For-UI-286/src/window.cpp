@@ -18,6 +18,9 @@ Window::Window() {
 
 }
 
+// Get Window rectangle
+Rectangle* Window::GetEstate() { return &estate; }
+
 // Draw the window to the screen
 void Window::Draw() {
 
@@ -55,5 +58,9 @@ void Window::Draw() {
     // Print window title
     GM_PutStr(title, estate.x + 4, estate.y + 4, 0x0, 0xFF);
 
+}
+
+void Window::OnClick(unsigned short x, unsigned short y) {
+    
 }
 
