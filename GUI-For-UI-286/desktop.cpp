@@ -61,6 +61,9 @@ void ShutdownPC() {
 // Exit function
 void ExitGUI() { GUIRunning = 0; }
 
+// Nothing function
+void NothingFunction(Button* sender) {}
+
 // A catalog of all the widgets in the UI(286) Operating System
 Widget* widget_list[50];
 unsigned int widget_list_size = 0;
@@ -135,8 +138,10 @@ void guiroot() {
     // Draw panel and widgets
     p.Draw();
 
-    // Initialize Welcome Window
+    // Initialize Welcome window
     Window hello_world;
+    Label prompt(&hello_world, "Welcome to the GUI for the UI(286) Operating System! This is a work in progress, however I hope you find it interesting!", 5, 5);
+    Button ok(&hello_world, "Cool!", 130, 60, NothingFunction);
     RegisterWindow(&hello_world);
     hello_world.Draw();
 
