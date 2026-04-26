@@ -185,8 +185,12 @@ void guiroot() {
 
         // Move the cursor if a new poll was successfully retreived
         if (m != -1) {
+            
+            // Log the coordinates originally clicked
+            clicked_x = mouse_state->x;
+            clicked_y = mouse_state->y;
 
-            // Address mouse not clicked 
+            // Address mouse not clicked (anymore)
             if (!mouse_state->left_clicked && !mouse_state->right_clicked) {
 
                 // If the mouse is no longer pressed from a click, send an event
@@ -222,14 +226,39 @@ void guiroot() {
 
             } else { // The mouse has a button down
 
+
                 // Change icon depending on what button was clicked
                 if (mouse_state->left_clicked) cur.ChangeIcon(left_click_cursor);
                 else if (mouse_state->right_clicked) cur.ChangeIcon(right_click_cursor);
 
-                // Log the coordinates originally clicked
-                mouse_down = 1;
-                clicked_x = mouse_state->x;
-                clicked_y = mouse_state->y;
+                // Trigger a mouse down event if the mouse was just pressed
+                if (mouse_down == 0) {
+
+                    // Get window dimensions and check if anywhere in the window was clicked
+                    for (i = 0; i < window_list_size; i++) {
+                        win_area = window_list[i]->GetEstate();
+                        if (clicked_x >= win_area->x && clicked_x < win_area->x + win_area->w
+                            && clicked_y >= win_area->y && clicked_y < win_area->y + win_area->h) {
+                                window_list[i]->MouseDown(clicked_x, clicked_y);
+                                i = 0xFFFF;
+                                break;
+                            }
+                    }
+
+                    // Get widget dimensions and check if a widget was clicked unless a window was already clicked
+                    if (i != 0xFFFF) for (i = 0; i < widget_list_size; i++) {
+                        win_area = widget_list[i]->GetEstate();
+                        if (clicked_x >= win_area->x && clicked_x < win_area->x + win_area->w
+                            && clicked_y >= win_area->y && clicked_y < win_area->y + win_area->h) {
+                                widget_list[i]->MouseDown();
+                                break;
+                            }
+                    }
+
+                    // Tell the OS the mouse is pressed down
+                    mouse_down = 1;
+                    
+                }
 
             }
         }

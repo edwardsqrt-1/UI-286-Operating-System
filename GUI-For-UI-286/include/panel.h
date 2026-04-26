@@ -28,7 +28,8 @@ class PanelClockWidget : public PanelWidget {
 
         PanelClockWidget(unsigned short start, unsigned short len, unsigned short panel_height); // Construct the clock widget on the panel
         void UpdateTime();  // Update time value and print it on screen
-        void OnClick(); // Handle a click to a button
+        void MouseDown();   // Handle a mouse down event
+        void OnClick();     // Handle a click to a button
     
 };
 
@@ -38,7 +39,8 @@ class PanelActionWidget : public PanelWidget {
     public:
         PanelActionWidget(unsigned short start, unsigned short len, unsigned short panel_height, void (*target)()); // Construct the action widget for the panel
         void (*execute)(); // The actual pointer to said function
-        void OnClick(); // Handle a click to a button
+        void MouseDown();  // Handle a mouse down event
+        void OnClick();    // Handle a click to a button
 
 };
 

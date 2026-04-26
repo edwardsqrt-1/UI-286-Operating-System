@@ -40,7 +40,16 @@ PanelActionWidget::PanelActionWidget(unsigned short start, unsigned short len, u
 }
 
 // On click, execute the embedded function
+void PanelActionWidget::MouseDown() {
+    aux_fill_color = fill_color;
+    fill_color = 0xF;
+    Draw();
+}
+
+// On click, execute the embedded function
 void PanelActionWidget::OnClick() {
+    fill_color = aux_fill_color;
+    Draw();
     execute();
 }
 
@@ -88,6 +97,11 @@ void PanelClockWidget::UpdateTime() {
         GM_PutUInt(0, x+24, y, 0xF, fill_color);
         GM_PutUInt(val.minute, x+32, y, 0xF, fill_color);
     } else GM_PutUInt(val.minute, x+24, y, 0xF, fill_color);
+
+}
+
+// Do nothing when mouse is pressed on a panel clock widget
+void PanelClockWidget::MouseDown() {
 
 }
 

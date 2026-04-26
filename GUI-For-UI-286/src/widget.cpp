@@ -87,10 +87,21 @@ void DesktopWidget::Draw() {
 }   
 
 // Click event for a desktop widget
+void DesktopWidget::MouseDown() {
+
+    // Cycle through a color as an example
+    fill_color = 0xF;
+
+    // Update widget
+    Draw();
+
+}
+
+// Click event for a desktop widget
 void DesktopWidget::OnClick() {
 
     // Cycle through a color as an example
-    fill_color = (fill_color + 1) & 0xF;
+    fill_color = 0x1;
 
     // Update widget
     Draw();

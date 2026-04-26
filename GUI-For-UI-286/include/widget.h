@@ -18,6 +18,7 @@ class Widget {
 
         Rectangle* GetEstate();         // Get the rectangular area of the widget
         virtual void Draw() = 0;        // Prototype for drawing the widget
+        virtual void MouseDown() = 0;   // Prototype for a mouse down event
         virtual void OnClick() = 0;     // Prototype for handling a click
 
 };
@@ -35,6 +36,7 @@ class DesktopWidget : public Widget {
         void SetIcon(unsigned char* new_icon);  // Set icon
         void ResetIcon();                       // Reset icon to default
         void Draw();                            // Draw widget onto screen
+        void MouseDown();                       // Handle a mouse down event
         void OnClick();                         // Handle a click from the mouse
 };
 

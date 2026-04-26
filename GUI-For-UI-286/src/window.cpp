@@ -80,12 +80,69 @@ void Window::Draw() {
 
 }
 
+// Window mouse down procedure
+void Window::MouseDown(unsigned short x, unsigned short y) {
+
+    // Helper variables
+    unsigned char i;
+    Rectangle* area;
+
+    // Check if exit button pressed
+    if (x < estate.x + estate.w && x > estate.x + estate.w - 15 && y > estate.y && y < estate.y + 14) {
+        for (x = estate.x + estate.w - 14; x < estate.x + estate.w - 3; x++) {
+            for (y = estate.y + 3; y < estate.y + 14; y++) {
+                GM_PutPixel(x, y, 0xF);
+            }
+        }
+    }
+
+    // Look for clickable elements and select the element that has the cursor on it when pressed
+    for (i = 0; i < num_contents; i++) {
+        area = contents[i]->GetEstate();
+        if (area->x + estate.x <= x && area->x + area->w + estate.x + estate.w > x &&
+            area->y + estate.y <= y && area->y + area->h + estate.y + estate.h > y && contents[i]->IsClickable()) {
+                contents[i]->MouseDown();
+                break;
+        }
+    }
+
+}
+
 // Window click procedure 
 void Window::OnClick(unsigned short x, unsigned short y) {
 
-    // Will implement this when window dragging works
+    // Helper variables
+    unsigned char i;
+    Rectangle* area;
+
+    // Check if exit button pressed
+    if (x < estate.x + estate.w && x > estate.x + estate.w - 15 && y > estate.y && y < estate.y + 14) {
+        for (x = estate.x + estate.w - 14; x < estate.x + estate.w - 3; x++) {
+            for (y = estate.y + 3; y < estate.y + 14; y++) {
+                GM_PutPixel(x, y, 0xC);
+            }
+        }
+    }
+
+    // Look for clickable elements and select the element that was clicked
+    for (i = 0; i < num_contents; i++) {
+        area = contents[i]->GetEstate();
+        if (area->x + estate.x <= x && area->x + area->w + estate.x + estate.w > x &&
+            area->y + estate.y <= y && area->y + area->h + estate.y + estate.h > y && contents[i]->IsClickable()) {
+                contents[i]->OnClick();
+                break;
+        }
+    }
 
 }
+
+/* GENERAL WINDOW CONTENT FUNCTIONS */
+
+// Return if the widget is clickable
+unsigned char WindowContent::IsClickable() { return clickable; }
+
+// Get the bounds of the widget in the window
+Rectangle* WindowContent::GetEstate() { return &estate; }
 
 /* LABEL FUNCTIONS */
 
@@ -100,6 +157,7 @@ Label::Label(Window* w, char* str) {
     for (length = 0; str[length] != 0 && length < 32; length++); // Getting length of string
     estate.w = (length * 8) % (w->GetViewport()->w);
     estate.h = ((length * 8) / (w->GetViewport()->w) + 1) * 10;
+    clickable = 0;
 
     // Link the parent window with the label
     parent = w;
@@ -115,6 +173,7 @@ Label::Label(Window* w, char* str, unsigned short x, unsigned short y) {
     label_text = str;
     estate.x = x;
     estate.y = y;
+    clickable = 0;
     for (length = 0; str[length] != 0 && length < 32; length++); // Also getting length of string
     estate.w = ((length - x) * 8) % (w->GetViewport()->w); // Use the entire width of the window          
     estate.h = (((length - x) * 8) / (w->GetViewport()->w) + 1) * 10; // Use at least the number of lines needed to print the label (wrap-around)
@@ -156,10 +215,12 @@ Button::Button(Window* w, char* str, void (*target)(Button*)) {
     
     // Initialize button contents
     button_text = str;
+    fill_color = 0xF;
     estate.x = 0;
     estate.y = 0;
     estate.w = 50;
     estate.h = 20;
+    clickable = 1;
 
     // Link the parent window and the button, but also link the button with the action it will take
     parent = w;
@@ -172,10 +233,12 @@ Button::Button(Window* w, char* str, unsigned short x, unsigned short y, void (*
     
     // Initialize button contents
     button_text = str;
+    fill_color = 0xF;
     estate.x = x;
     estate.y = y;
     estate.w = 50;
     estate.h = 20;
+    clickable = 1;
 
     // Link the parent window and the button, but also link the button with the action it will take
     parent = w;
@@ -193,7 +256,7 @@ void Button::Draw() {
             if (x == parent->GetViewport()->x + estate.x || x == parent->GetViewport()->x + estate.x + estate.w - 1
                 || y == parent->GetViewport()->y + estate.y || y == parent->GetViewport()->y + estate.y + estate.h - 1) 
                     GM_PutPixel(x, y, 0x0);
-            else GM_PutPixel(x, y, 0xF);
+            else GM_PutPixel(x, y, fill_color);
         }
     }
 
@@ -201,5 +264,15 @@ void Button::Draw() {
     GM_PutStr(button_text, parent->GetViewport()->x + estate.x + 4, parent->GetViewport()->y + estate.y + (estate.h / 2 - 5), 0x0, 0xFF);
 }
 
-// Click event for the button
-void Button::OnClick() { action(this); }
+// Mouse was pressed at this button (change color of button to show it was pressed)
+void Button::MouseDown() {
+    fill_color = 0xE;
+    Draw();
+}
+
+// Click event for the button (change color back and perform the selected click action)
+void Button::OnClick() { 
+    fill_color = 0xF;
+    Draw();
+    action(this); 
+}
