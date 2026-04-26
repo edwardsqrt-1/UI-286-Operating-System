@@ -7,6 +7,12 @@
 #define WIDTH 640
 #define TM_BYTES_PER_PIXEL 2
 
+// Pointer to backup screen buffer
+extern unsigned char __far * screen_buffer;
+
+// Pointer to end of backup screen buffer
+extern unsigned char __far * end_screen_buffer;
+
 // Procedure to place a pixel on the screen
 void GM_PutPixel(unsigned short x, unsigned short y, unsigned char c);
 

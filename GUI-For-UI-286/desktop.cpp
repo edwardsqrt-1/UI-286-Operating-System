@@ -45,6 +45,29 @@ void __far entrypoint() {
 char GUIRunning = 1;
 
 // Shutdown function
+void Splash() {
+    
+    // Helper variables
+    unsigned short x;
+    unsigned short y;
+    unsigned char mov;
+
+    // Print text on boot screen
+    GM_PutStr("GUI for UI(286)", 260, 235, 0xF, 0xFF);
+    GM_PutStr("Now loading...", 264, 260, 0xB, 0xFF);
+
+    // The loading bar (updates every 0.25 seconds)
+    for (mov = 0; mov < 16; mov++) {
+        for (x = 0; x < 640; x++) {
+            for (y = 0; y < 15; y++) {
+                GM_PutPixel(x, y, ((x / 40) + mov) & 0xF);
+            }
+        }
+        Delay(250000);
+    }
+}
+
+// Shutdown function
 void ShutdownPC() {
     
     // Print shutdown screen
@@ -58,11 +81,13 @@ void ShutdownPC() {
     }
 }
 
-// Exit function
+// Exit GUI function
 void ExitGUI() { GUIRunning = 0; }
 
-// Nothing function
-void NothingFunction(Button* sender) {}
+// Exit Window function
+void ExitWindow(Button* sender) {
+    sender->GetParent()->Exit();
+}
 
 // A catalog of all the widgets in the UI(286) Operating System
 Widget* widget_list[50];
@@ -125,7 +150,10 @@ void guiroot() {
     // Set the screen mode to be Mode 0x12 and point a buffer at memory
     SetGraphicsMode(MODE_640x480x16);
 
-    // Add a cool gradient at the top
+    // Start boot splash
+    Splash();
+
+    // Clear the desktop with blue
     GM_BlankScreen(0x1);
 
     // Draw the desktop background
@@ -141,7 +169,7 @@ void guiroot() {
     // Initialize Welcome window
     Window hello_world;
     Label prompt(&hello_world, "Welcome to the GUI for the UI(286) Operating System! This is a work in progress, however I hope you find it interesting!", 5, 5);
-    Button ok(&hello_world, "Cool!", 130, 60, NothingFunction);
+    Button ok(&hello_world, "Cool!", 130, 60, ExitWindow);
     RegisterWindow(&hello_world);
     hello_world.Draw();
 
@@ -170,7 +198,6 @@ void guiroot() {
     c = 0;
     while (GUIRunning) {
 
-        
         // Get character if one exists in the buffer and get time
         c = GetChar();
         if (c == 'x' || c == 'X') {
@@ -195,9 +222,10 @@ void guiroot() {
 
                 // If the mouse is no longer pressed from a click, send an event
                 if (mouse_down == 1) {
+                    
+                    // Tell the OS the mouse is no longer pressed
                     mouse_down = 0;
 
-                    // Get window dimensions and check if anywhere in the window was clicked
                     for (i = 0; i < window_list_size; i++) {
                         win_area = window_list[i]->GetEstate();
                         if (clicked_x >= win_area->x && clicked_x < win_area->x + win_area->w
@@ -226,13 +254,15 @@ void guiroot() {
 
             } else { // The mouse has a button down
 
-
                 // Change icon depending on what button was clicked
                 if (mouse_state->left_clicked) cur.ChangeIcon(left_click_cursor);
                 else if (mouse_state->right_clicked) cur.ChangeIcon(right_click_cursor);
 
                 // Trigger a mouse down event if the mouse was just pressed
                 if (mouse_down == 0) {
+                    
+                    // Tell the OS the mouse is pressed down
+                    mouse_down = 1;
 
                     // Get window dimensions and check if anywhere in the window was clicked
                     for (i = 0; i < window_list_size; i++) {
@@ -254,9 +284,6 @@ void guiroot() {
                                 break;
                             }
                     }
-
-                    // Tell the OS the mouse is pressed down
-                    mouse_down = 1;
                     
                 }
 

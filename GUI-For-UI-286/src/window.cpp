@@ -12,6 +12,10 @@ Window::Window() {
     estate.h = 102;
     title = "GUI for UI(286)";
 
+    // Resetting previous coordinates
+    new_x = 0xFFFF;
+    new_y = 0xFFFF;
+
     // Initialize window view
     view.x = estate.x + 3;
     view.y = estate.y + 15;
@@ -31,6 +35,16 @@ Rectangle* Window::GetEstate() { return &estate; }
 
 // Get Window viewport
 Rectangle* Window::GetViewport() { return &view; }
+
+void Window::UpdateViewport() {
+
+    // Set window view based on the window constraints
+    view.x = estate.x + 3;
+    view.y = estate.y + 15;
+    view.w = estate.w - 6;
+    view.h = estate.h - 18;
+
+}
 
 // Add content to a window
 void Window::AddContent(WindowContent* c) {
@@ -76,6 +90,7 @@ void Window::Draw() {
 
     // Print window title and draw other contents if there are any
     GM_PutStr(title, estate.x + 4, estate.y + 4, 0x0, 0xFF);
+    UpdateViewport();
     for (x = 0; x < num_contents; x++) contents[x]->Draw();
 
 }
@@ -94,6 +109,21 @@ void Window::MouseDown(unsigned short x, unsigned short y) {
                 GM_PutPixel(x, y, 0xF);
             }
         }
+    }
+
+    // Check if title bar selected
+    if ((x > estate.x && x <= estate.x + estate.w - 15 && y > estate.y && y < estate.y + 14) && (new_x == 0xFFFF || new_y == 0xFFFF)) {
+
+        new_x = x;
+        new_y = y;
+        dist_x = x - estate.x;
+        dist_y = y - estate.y;
+        return;
+
+    } else if (new_x != 0xFFFF && new_y != 0xFFFF) {
+
+        return;
+
     }
 
     // Look for clickable elements and select the element that has the cursor on it when pressed
@@ -115,6 +145,18 @@ void Window::OnClick(unsigned short x, unsigned short y) {
     unsigned char i;
     Rectangle* area;
 
+    // Check if title bar selected
+    if (new_x != 0xFFFF && new_y != 0xFFFF) {
+
+        estate.x = x - dist_x;
+        estate.y = y - dist_y;
+        Draw();
+        new_x = 0xFFFF;
+        new_y = 0xFFFF;
+        return;
+        
+    }
+
     // Check if exit button pressed
     if (x < estate.x + estate.w && x > estate.x + estate.w - 15 && y > estate.y && y < estate.y + 14) {
         for (x = estate.x + estate.w - 14; x < estate.x + estate.w - 3; x++) {
@@ -122,6 +164,7 @@ void Window::OnClick(unsigned short x, unsigned short y) {
                 GM_PutPixel(x, y, 0xC);
             }
         }
+        return;
     }
 
     // Look for clickable elements and select the element that was clicked
@@ -136,6 +179,10 @@ void Window::OnClick(unsigned short x, unsigned short y) {
 
 }
 
+void Window::Exit() {
+
+}
+
 /* GENERAL WINDOW CONTENT FUNCTIONS */
 
 // Return if the widget is clickable
@@ -143,6 +190,9 @@ unsigned char WindowContent::IsClickable() { return clickable; }
 
 // Get the bounds of the widget in the window
 Rectangle* WindowContent::GetEstate() { return &estate; }
+
+// Get the parent window
+Window* WindowContent::GetParent() { return parent; }
 
 /* LABEL FUNCTIONS */
 

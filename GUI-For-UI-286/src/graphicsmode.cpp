@@ -1,5 +1,11 @@
 #include <graphicsmode.h>
 
+// Pointer to backup screen buffer
+unsigned char __far * screen_buffer = (unsigned char __far *) 0x10000000L;
+
+// Pointer to end of backup screen buffer
+unsigned char __far * end_screen_buffer = (unsigned char __far *) 0x30005800L;
+
 // Place a single pixel on the screen at the specified coordinates
 void GM_PutPixel(unsigned short x, unsigned short y, unsigned char c) {
 

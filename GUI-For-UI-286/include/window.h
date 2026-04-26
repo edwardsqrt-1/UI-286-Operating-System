@@ -14,12 +14,15 @@ class Window {
         Rectangle estate;                   // Rectangle that describes the window view
         Rectangle view;                     // View of the window
         char* title;                        // Window title
-        unsigned char* obscuring;           // Pixels behind the window are stored here
         unsigned char window_color;         // Main color of the window
         unsigned char outer_border_color;   // Color of the border lines
         unsigned char inner_border_color;   // Color of the main border within the lines
         unsigned char title_color;          // Color of the title bar
         unsigned char num_contents;         // Current number of contents in the window
+        unsigned short new_x;
+        unsigned short new_y;
+        short dist_x;
+        short dist_y;
         WindowContent* contents[20];        // Contents of the window
 
     public:
@@ -27,6 +30,7 @@ class Window {
         void Draw();                // Function to draw a simple window onto the screen
         Rectangle* GetEstate();     // Get the rectangular area the window occupies
         Rectangle* GetViewport();   // Get the viewport of the window
+        void UpdateViewport();      // Update viewport after manipulation
         void MouseDown(unsigned short x, unsigned short y);   // Handle when the mouse is down at a location
         void OnClick(unsigned short x, unsigned short y);     // Handle a click at a location
         void AddContent(WindowContent* c);                    // Add a widget as content of a window
@@ -43,6 +47,7 @@ class WindowContent {
     public:
         unsigned char IsClickable();    // Function to determine whether a widget is even clickable
         Rectangle* GetEstate();         // Get the rectangular area the content uses
+        Window* GetParent();            // Get parent window
         virtual void Draw() = 0;        // Prototype for drawing a window content onto a window
         virtual void MouseDown() = 0;   // Prototype for a mouse down event
         virtual void OnClick() = 0;     // Prototype for a click event
