@@ -63,7 +63,7 @@ void Splash() {
                 GM_PutPixel(x, y, ((x / 40) + mov) & 0xF);
             }
         }
-        Delay(250000);
+        Delay(150000);
     }
 }
 
@@ -264,7 +264,7 @@ void guiroot() {
                     // Tell the OS the mouse is pressed down
                     mouse_down = 1;
 
-                    // Get window dimensions and check if anywhere in the window was clicked
+                    // Get window dimensions and check if anywhere in the window was pressed
                     for (i = 0; i < window_list_size; i++) {
                         win_area = window_list[i]->GetEstate();
                         if (clicked_x >= win_area->x && clicked_x < win_area->x + win_area->w
@@ -285,6 +285,19 @@ void guiroot() {
                             }
                     }
                     
+                } else {
+
+                    // Get window dimensions and check if anywhere in the window was pressed
+                    for (i = 0; i < window_list_size; i++) {
+                        win_area = window_list[i]->GetEstate();
+                        if (clicked_x >= win_area->x && clicked_x < win_area->x + win_area->w
+                            && clicked_y >= win_area->y && clicked_y < win_area->y + win_area->h) {
+                                window_list[i]->MouseDown(clicked_x, clicked_y);
+                                i = 0xFFFF;
+                                break;
+                            }
+                    }
+
                 }
 
             }

@@ -36,6 +36,7 @@ Rectangle* Window::GetEstate() { return &estate; }
 // Get Window viewport
 Rectangle* Window::GetViewport() { return &view; }
 
+// Update the window viewport
 void Window::UpdateViewport() {
 
     // Set window view based on the window constraints
@@ -111,19 +112,36 @@ void Window::MouseDown(unsigned short x, unsigned short y) {
         }
     }
 
-    // Check if title bar selected
+    // Check if title bar selected for the first time
     if ((x > estate.x && x <= estate.x + estate.w - 15 && y > estate.y && y < estate.y + 14) && (new_x == 0xFFFF || new_y == 0xFFFF)) {
 
         new_x = x;
         new_y = y;
         dist_x = x - estate.x;
         dist_y = y - estate.y;
+        Draw();
         return;
 
+    // If not the first time it was selected, go ahead and draw the window at the new location
     } else if (new_x != 0xFFFF && new_y != 0xFFFF) {
 
-        return;
+        // Update the special new coordinates
+        new_x = x;
+        new_y = y;
 
+        // Set the new X coordinate of the window
+        if ((short)x - dist_x < 0) estate.x = 0;
+        else if ((short)x - dist_x + estate.w >= 640) estate.x = 639-estate.w;
+        else estate.x = x - dist_x;
+
+        // Set the new Y coordinate of the window
+        if ((short)y - dist_y < 0) estate.y = 0;
+        else if ((short)y - dist_y + estate.h >= 480) estate.y = 479-estate.h;
+        else estate.y = y - dist_y;
+
+        // Draw the window and exit
+        Draw();
+        return;
     }
 
     // Look for clickable elements and select the element that has the cursor on it when pressed
@@ -145,7 +163,7 @@ void Window::OnClick(unsigned short x, unsigned short y) {
     unsigned char i;
     Rectangle* area;
 
-    // Check if title bar selected
+    // If in the process of drawing, draw the window one final time
     if (new_x != 0xFFFF && new_y != 0xFFFF) {
 
         estate.x = x - dist_x;
@@ -179,6 +197,7 @@ void Window::OnClick(unsigned short x, unsigned short y) {
 
 }
 
+// Window exit procedure
 void Window::Exit() {
 
 }

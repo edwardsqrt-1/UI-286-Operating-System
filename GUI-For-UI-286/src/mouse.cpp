@@ -263,9 +263,9 @@ Cursor::Cursor(unsigned short x, unsigned short y, unsigned char* mouse_bitmap) 
     // Save pixels that are about to be overwritten by the cursor, then write the cursor to the screen
     for (y_pixel = 0; y_pixel < 10; y_pixel++) {
         for (x_pixel = 0; x_pixel < 8; x_pixel++) {
-            if (x + x_pixel < 640 && x + x_pixel >= 0 && y + y_pixel < 480 && y + y_pixel >= 0) {
+            if (x + x_pixel < 640 && x + x_pixel >= 0 && y + y_pixel < 480 && y + y_pixel >= 0 && icon[y_pixel*8 + x_pixel] != 0xFF) {
                 screen[y_pixel*8 + x_pixel] = GM_GetPixel(x + x_pixel, y + y_pixel);
-                if (icon[y_pixel*8 + x_pixel] != 0xFF) GM_PutPixel(x + x_pixel, y + y_pixel, icon[y_pixel*8 + x_pixel]);     
+                GM_PutPixel(x + x_pixel, y + y_pixel, icon[y_pixel*8 + x_pixel]);     
             }
         }
     }
@@ -291,8 +291,8 @@ void Cursor::PlaceCursor() {
     // If cursor was just initialized; ignore. Otherwise, replace the last finding of the cursor with the screen contents the cursor covered
     for (y_pixel = 0; y_pixel < 10; y_pixel++) {
         for (x_pixel = 0; x_pixel < 8; x_pixel++) {
-            if (last_x + x_pixel < 640 && last_x + x_pixel >= 0 && last_y + y_pixel < 480 && last_y + y_pixel >= 0) {
-                if (screen[y_pixel*8 + x_pixel] != 0xFF) GM_PutPixel(last_x + x_pixel, last_y + y_pixel, screen[y_pixel*8 + x_pixel]);
+            if (last_x + x_pixel < 640 && last_x + x_pixel >= 0 && last_y + y_pixel < 480 && last_y + y_pixel >= 0 && icon[y_pixel*8 + x_pixel] != 0xFF) {
+                GM_PutPixel(last_x + x_pixel, last_y + y_pixel, screen[y_pixel*8 + x_pixel]);
             }
         }
     }
@@ -300,9 +300,9 @@ void Cursor::PlaceCursor() {
     // Draw the cursor in the new part of the screen
     for (y_pixel = 0; y_pixel < 10; y_pixel++) {
         for (x_pixel = 0; x_pixel < 8; x_pixel++) {
-            if (mouse.x + x_pixel < 640 && mouse.x + x_pixel >= 0 && mouse.y + y_pixel < 480 && mouse.y + y_pixel >= 0) {
+            if (mouse.x + x_pixel < 640 && mouse.x + x_pixel >= 0 && mouse.y + y_pixel < 480 && mouse.y + y_pixel >= 0 && icon[y_pixel*8 + x_pixel] != 0xFF) {
                 screen[y_pixel*8 + x_pixel] = GM_GetPixel(mouse.x + x_pixel, mouse.y + y_pixel);
-                if (icon[y_pixel*8 + x_pixel] != 0xFF) GM_PutPixel(mouse.x + x_pixel, mouse.y + y_pixel, icon[y_pixel*8 + x_pixel]);
+                GM_PutPixel(mouse.x + x_pixel, mouse.y + y_pixel, icon[y_pixel*8 + x_pixel]);
             }
         }
     }
