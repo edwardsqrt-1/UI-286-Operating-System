@@ -55,6 +55,9 @@ void main() {
     // Prepare variables
     int i = 0;
     char c = 0;
+    unsigned char x,y;
+    unsigned char buffer_char[16][5];
+    unsigned char buffer_attr[16][5];
     struct Snake snek;
 
     // Initialize window
@@ -88,8 +91,25 @@ void main() {
                 snek.going = SNAKE_RIGHT;
                 break;
             case ' ': // Space = pause
+
+                // Show a message that it is paused
+                for (y = 10; y < 15; y++) {
+                    for (x = 32; x < 48; x++) {
+                        buffer_char[x-32][y-10] = TM_PeekChar(x, y);
+                        buffer_attr[x-32][y-10] = (TM_PeekBG(x, y) << 4) | TM_PeekFG(x,y);
+                        if (x == 32 || x == 47 || y == 10 || y == 14) TM_PutChar(0xDB, x, y, 0x5F);
+                        else TM_PutChar(0xDB, x, y, 0x54);
+                    } 
+                }
+                TM_PutStr("Paused", 35, 12, 0x4F);
+
+                // Wait until space is pressed again
                 c = 0;
                 while (c != ' ') c = GetChar();
+
+                // Clear pause screen
+                for (y = 10; y < 15; y++) for (x = 32; x < 48; x++) TM_PutChar(buffer_char[x-32][y-10], x, y, buffer_attr[x-32][y-10]);
+
                 break;
             case 'c': // Change color
                 snek.attr = (0xF0 & snek.attr) | ((snek.attr + 1) & 0x0F);

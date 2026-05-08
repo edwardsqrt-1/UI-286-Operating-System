@@ -15,8 +15,14 @@ void TM_BlankScreen(unsigned char attr);
 // Procedure to blank the screen out with a color
 void TM_ClearConsole(unsigned char attr);
 
-// Procedure to get current character value at pixel
+// Function to get current character value at character
 char TM_PeekChar(unsigned char x, unsigned char y);
+
+// Function to get background color at a character
+char TM_PeekFG(unsigned char x, unsigned char y);
+
+// Function to get foreground color at a character
+char TM_PeekBG(unsigned char x, unsigned char y);
 
 // Procedure to print out a single character
 void TM_PutChar(char c, unsigned char x, unsigned char y, unsigned char attr);

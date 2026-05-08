@@ -76,6 +76,28 @@ char TM_PeekChar(unsigned char x, unsigned char y) {
 
 }
 
+// Looks at what the background color is set at a location
+char TM_PeekBG(unsigned char x, unsigned char y) {
+
+    // Calculate offset
+    char __far * screen = (char __far *) 0xB8000000L; // ES = 0xB800; BX = 0x0
+    unsigned short off = (y * TM_WIDTH + x) * TM_BYTES_PER_PIXEL;
+    screen += off;
+    return (*(screen+1) >> 4) & 0x7;
+
+}
+
+// Looks at what the foreground color is set at a location
+char TM_PeekFG(unsigned char x, unsigned char y) {
+
+    // Calculate offset
+    char __far * screen = (char __far *) 0xB8000000L; // ES = 0xB800; BX = 0x0
+    unsigned short off = (y * TM_WIDTH + x) * TM_BYTES_PER_PIXEL;
+    screen += off;
+    return *(screen+1) & 0xF;
+
+}
+
 // Places a character in the video memory
 void TM_PutChar(char c, unsigned char x, unsigned char y, unsigned char attr) {
 
