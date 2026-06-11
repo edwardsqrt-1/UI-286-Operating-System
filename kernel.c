@@ -244,7 +244,7 @@ void main286() {
 
     // Temporary variables
     struct FATEntry* ent;
-    unsigned char x = 9, y = 6;
+    unsigned char x = 9, y = 5;
     short res, i, j, k;
     unsigned long sectors;
     char c;
@@ -266,8 +266,7 @@ void main286() {
     TM_TUIInit("\xDB UI(286) CLI \xDB", 0x19);
     TM_PutStr(welcome, 1, 2, 0x3F);
     TM_PutStr(note, 1, 3, 0x39);
-    TM_PutStr("NOT FOR USE IN CALIFORNIA NOR BRAZIL!", 1, 4, 0x3C);
-    TM_PutStr(prompt, 1, 6, 0x3F);
+    TM_PutStr(prompt, 1, 5, 0x3F);
     UpdateClock();
     
     // Command line
